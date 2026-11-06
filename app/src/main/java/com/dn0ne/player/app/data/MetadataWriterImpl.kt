@@ -39,8 +39,8 @@ class MetadataWriterImpl(
         metadata: Metadata,
         onSecurityError: (IntentSender) -> Unit
     ): Result<Unit, DataError.Local> {
+        var file: File? = null
         try {
-            var file: File? = null
             context.contentResolver.openInputStream(track.uri)?.use { input ->
                 val temp = TempAudioCache.create(context, track.format)
                 FileOutputStream(temp).use { output ->
@@ -49,67 +49,79 @@ class MetadataWriterImpl(
                 file = temp
             }
 
-            if (file == null) return Result.Error(DataError.Local.NoReadPermission)
+            val temp = file ?: return Result.Error(DataError.Local.NoReadPermission)
 
-            val audioFile =
-                AudioFileIO.read(file) ?: return Result.Error(DataError.Local.FailedToRead)
-            val tag = audioFile.tagAndConvertOrCreateAndSetDefault
-                ?: return Result.Error(DataError.Local.FailedToRead)
+            if (track.format.equals("opus", ignoreCase = true)) {
+                // jaudiotagger 3.0.1 has no .opus reader, and its OggFileReader
+                // rejects OpusHead, so the OpusTags packet is edited at the Ogg
+                // page level instead.
+                try {
+                    OpusTagEditor.update(temp, metadata)
+                } catch (e: Exception) {
+                    Log.w(logTag, "Failed to write OPUS tags", e)
+                    return Result.Error(DataError.Local.FailedToRead)
+                }
+            } else {
+                val audioFile =
+                    AudioFileIO.read(temp) ?: return Result.Error(DataError.Local.FailedToRead)
+                val tag = audioFile.tagAndConvertOrCreateAndSetDefault
+                    ?: return Result.Error(DataError.Local.FailedToRead)
 
-            metadata.run {
-                title?.let {
-                    tag.setField(FieldKey.TITLE, it)
+                metadata.run {
+                    title?.let {
+                        tag.setField(FieldKey.TITLE, it)
+                    }
+
+                    album?.let {
+                        tag.setField(FieldKey.ALBUM, it)
+                    }
+
+                    artist?.let {
+                        tag.setField(FieldKey.ARTIST, it)
+                    }
+
+                    albumArtist?.let {
+                        tag.setField(FieldKey.ALBUM_ARTIST, it)
+                    }
+
+                    genre?.let {
+                        tag.setField(FieldKey.GENRE, it)
+                    }
+
+                    year?.let {
+                        tag.setField(FieldKey.YEAR, it)
+                    }
+
+                    trackNumber?.let {
+                        tag.setField(FieldKey.TRACK, it)
+                    }
+
+                    coverArtBytes?.let { artBytes ->
+                        val cover = AndroidArtwork.createArtworkFromFile(temp)
+                        cover.binaryData = artBytes
+                        cover.mimeType =
+                            ImageFormats.getMimeTypeForBinarySignature(artBytes)
+                        cover.pictureType = PictureTypes.DEFAULT_ID
+                        cover.description = ""
+                        tag.deleteArtworkField()
+                        tag.setField(cover)
+                    }
+
+                    lyrics?.let {
+                        tag.setField(FieldKey.LYRICS, it)
+                    }
                 }
 
-                album?.let {
-                    tag.setField(FieldKey.ALBUM, it)
-                }
-
-                artist?.let {
-                    tag.setField(FieldKey.ARTIST, it)
-                }
-
-                albumArtist?.let {
-                    tag.setField(FieldKey.ALBUM_ARTIST, it)
-                }
-
-                genre?.let {
-                    tag.setField(FieldKey.GENRE, it)
-                }
-
-                year?.let {
-                    tag.setField(FieldKey.YEAR, it)
-                }
-
-                trackNumber?.let {
-                    tag.setField(FieldKey.TRACK, it)
-                }
-
-                coverArtBytes?.let { artBytes ->
-                    val cover = AndroidArtwork.createArtworkFromFile(file)
-                    cover.binaryData = artBytes
-                    cover.mimeType =
-                        ImageFormats.getMimeTypeForBinarySignature(artBytes)
-                    cover.pictureType = PictureTypes.DEFAULT_ID
-                    cover.description = ""
-                    tag.deleteArtworkField()
-                    tag.setField(cover)
-                }
-
-                lyrics?.let {
-                    tag.setField(FieldKey.LYRICS, it)
-                }
+                AudioFileIO.write(audioFile)
             }
 
             try {
                 context.contentResolver.openOutputStream(track.uri)?.use { output ->
-                    AudioFileIO.write(audioFile)
-                    FileInputStream(audioFile.file).use { input ->
+                    FileInputStream(temp).use { input ->
                         input.copyTo(output)
                     }
                 }
                 MediaScannerConnection.scanFile(context, arrayOf(track.data), null, null)
-                file?.delete()
                 return Result.Success(Unit)
             } catch (e: SecurityException) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -147,7 +159,7 @@ class MetadataWriterImpl(
                     e.message + "\n" + e.stackTrace.joinToString("\n")
                 )
             clipboardManager?.setPrimaryClip(clip)
-            return Result.Error(DataError.Local.NoReadPermission)
+            return Result.Error(DataError.Local.FailedToRead)
         } catch (e: NoWritePermissionsException) {
             Log.d(logTag, e.message, e)
             val clipboardManager =
@@ -181,6 +193,10 @@ class MetadataWriterImpl(
                 )
             clipboardManager?.setPrimaryClip(clip)
             return Result.Error(DataError.Local.Unknown)
+        } finally {
+            // The temp copy is a full duplicate of the audio file. Remove it on
+            // every exit path, not only the success path.
+            file?.delete()
         }
     }
 }
