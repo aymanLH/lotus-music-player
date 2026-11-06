@@ -17,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ShapeDefaults
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -43,6 +44,9 @@ import com.dn0ne.player.core.data.Settings
 @Composable
 fun LyricsSettings(
     settings: Settings,
+    lyricsFetchProgress: LyricsFetchProgress,
+    onFetchLyricsForAllTracksClick: () -> Unit,
+    onCancelFetchLyricsForAllTracksClick: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -109,6 +113,56 @@ fun LyricsSettings(
             },
             modifier = Modifier.fillMaxWidth()
         )
+
+        FilledTonalButton(
+            onClick = onFetchLyricsForAllTracksClick,
+            enabled = !lyricsFetchProgress.isRunning,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = context.resources.getString(
+                    if (lyricsFetchProgress.isRunning) {
+                        R.string.fetching_lyrics_for_all_tracks
+                    } else R.string.fetch_lyrics_for_all_tracks
+                )
+            )
+        }
+
+        Text(
+            text = context.resources.getString(R.string.fetch_all_lyrics_explain),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        if (lyricsFetchProgress.isRunning || lyricsFetchProgress.isFinished) {
+            Text(
+                text = context.resources.getString(
+                    when {
+                        lyricsFetchProgress.total == 0 -> R.string.no_tracks_to_fetch_lyrics
+                        lyricsFetchProgress.isRunning -> R.string.fetch_all_lyrics_progress
+                        lyricsFetchProgress.stoppedEarly -> when (lyricsFetchProgress.stopReason) {
+                            LyricsFetchStopReason.RateLimited -> R.string.fetch_all_lyrics_rate_limited
+                            LyricsFetchStopReason.Network -> R.string.fetch_all_lyrics_network_stopped
+                            else -> R.string.fetch_all_lyrics_stopped
+                        }
+                        else -> R.string.fetch_all_lyrics_finished
+                    },
+                    lyricsFetchProgress.processed,
+                    lyricsFetchProgress.total,
+                    lyricsFetchProgress.found
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+
+        if (lyricsFetchProgress.isRunning) {
+            TextButton(onClick = onCancelFetchLyricsForAllTracksClick) {
+                Text(text = context.resources.getString(R.string.cancel))
+            }
+        }
 
         var lyricsFontSize by remember {
             mutableStateOf(settings.lyricsFontSize)

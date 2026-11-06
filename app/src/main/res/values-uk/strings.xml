@@ -7,7 +7,7 @@
     <string name="get_started">Начать</string>
     <string name="permissions">Дозволи</string>
     <string name="audio">Аудіо</string>
-    <string name="explain_audio_permission_requirement">Lotus потребує його, щоб відтворювати вашу чудову музику</string>
+    <string name="explain_audio_permission_requirement">Lyrion потребує його, щоб відтворювати вашу чудову музику</string>
     <string name="grant_permission">Надати дозвіл</string>
     <string name="next">Далі</string>
     <string name="grant_permission_in_settings">Будь ласка, надайте дозвіл у налаштуваннях</string>
@@ -170,6 +170,15 @@
     <string name="import_from_file">Імпортувати з файлу</string>
     <string name="write_to_tag">Записати в тег</string>
     <string name="fetch_from_lrclib">Взяти з LRCLIB</string>
+    <string name="fetch_lyrics_for_all_tracks">Завантажити текст для всіх треків</string>
+    <string name="fetching_lyrics_for_all_tracks">Завантаження тексту…</string>
+    <string name="fetch_all_lyrics_explain">Послідовно завантажити відсутній текст із LRCLIB і зберегти локально.</string>
+    <string name="fetch_all_lyrics_progress">Перевірено %1$d із %2$d треків · текст доступний для: %3$d</string>
+    <string name="fetch_all_lyrics_finished">Готово: текст доступний для %3$d треків, перевірено %1$d із %2$d.</string>
+    <string name="fetch_all_lyrics_stopped">Зупинено після перевірки %1$d із %2$d треків. Текст доступний для: %3$d.</string>
+    <string name="fetch_all_lyrics_rate_limited">LRCLIB обмежує запити або тимчасово недоступна. Зачекайте й спробуйте знову. Перевірено %1$d із %2$d; текст доступний для: %3$d.</string>
+    <string name="fetch_all_lyrics_network_stopped">Проблема з мережею. Перевірте з’єднання та спробуйте знову. Перевірено %1$d із %2$d; текст доступний для: %3$d.</string>
+    <string name="no_tracks_to_fetch_lyrics">Немає треків для завантаження.</string>
     <string name="publish_on_lrclib">Опублікувати на LRCLIB</string>
     <string name="unable_to_publish">Неможливо опублікувати: не вказано назву, виконавця або альбом.</string>
     <string name="published_successfully">Успішно опубліковано.</string>
@@ -260,6 +269,8 @@
     <string name="equalizer_explain">Ручне регулювання звуку</string>
 ау    <string name="jump_to_beginning">Перейти до початку</string>
     <string name="jump_to_beginning_explain">Перезапустити поточний трек при першому натисканні кнопки переходу до попереднього</string>
+    <string name="floating_mini_player">Плаваючий мініплеєр</string>
+    <string name="floating_mini_player_explain">Показувати мініплеєр у вигляді плаваючої панелі із заокругленими кутами</string>
 
     <!-- Tabs settings -->
     <string name="tabs">Вкладки</string>

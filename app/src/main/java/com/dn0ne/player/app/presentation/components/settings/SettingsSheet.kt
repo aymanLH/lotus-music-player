@@ -59,6 +59,8 @@ fun SettingsSheet(
     onFolderPick: (scan: Boolean) -> Unit,
     onPlaylistPick: () -> Unit,
     onScanFoldersClick: () -> Unit,
+    onFetchLyricsForAllTracksClick: () -> Unit,
+    onCancelFetchLyricsForAllTracksClick: () -> Unit,
     onCloseClick: () -> Unit,
     dominantColorState: DominantColorState<ImageBitmap>,
     modifier: Modifier = Modifier
@@ -278,6 +280,9 @@ fun SettingsSheet(
                 composable<SettingsRoutes.Lyrics> {
                     LyricsSettings(
                         settings = state.settings,
+                        lyricsFetchProgress = state.lyricsFetchProgress,
+                        onFetchLyricsForAllTracksClick = onFetchLyricsForAllTracksClick,
+                        onCancelFetchLyricsForAllTracksClick = onCancelFetchLyricsForAllTracksClick,
                         onBackClick = {
                             navController.navigateUp()
                         },

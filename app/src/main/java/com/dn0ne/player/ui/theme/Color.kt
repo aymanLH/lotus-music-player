@@ -1,8 +1,26 @@
 package com.dn0ne.player.ui.theme
 
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.ColorScheme
 
 val primaryLight = Color(0xFF4C662B)
+val lyrionPurple = Color(0xFF32164D)
+val lyrionSurface = Color(0xFF43275C)
+
+fun ColorScheme.lyrionBranded() = copy(
+    background = lyrionPurple,
+    onBackground = Color.White,
+    surface = lyrionPurple,
+    onSurface = Color.White,
+    surfaceVariant = lyrionSurface,
+    onSurfaceVariant = Color(0xFFE8DDF0),
+    outline = Color(0xFFD0B5E3),
+    surfaceContainerLowest = Color(0xFF29123F),
+    surfaceContainerLow = Color(0xFF351A50),
+    surfaceContainer = Color(0xFF3C2057),
+    surfaceContainerHigh = lyrionSurface,
+    surfaceContainerHighest = Color(0xFF52366D)
+)
 val onPrimaryLight = Color(0xFFFFFFFF)
 val primaryContainerLight = Color(0xFFCDEDA3)
 val onPrimaryContainerLight = Color(0xFF102000)

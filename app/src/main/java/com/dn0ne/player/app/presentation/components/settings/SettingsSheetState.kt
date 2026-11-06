@@ -9,5 +9,22 @@ data class SettingsSheetState(
     val musicScanner: MusicScanner,
     val isShown: Boolean = false,
     val equalizerController: EqualizerController,
-    val foldersWithAudio: Set<String> = emptySet()
+    val foldersWithAudio: Set<String> = emptySet(),
+    val lyricsFetchProgress: LyricsFetchProgress = LyricsFetchProgress()
 )
+
+data class LyricsFetchProgress(
+    val isRunning: Boolean = false,
+    val isFinished: Boolean = false,
+    val stoppedEarly: Boolean = false,
+    val processed: Int = 0,
+    val total: Int = 0,
+    val found: Int = 0,
+    val stopReason: LyricsFetchStopReason? = null
+)
+
+enum class LyricsFetchStopReason {
+    Network,
+    RateLimited,
+    Other
+}

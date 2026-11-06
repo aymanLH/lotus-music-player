@@ -36,6 +36,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
 import androidx.compose.material.icons.automirrored.rounded.ViewList
 import androidx.compose.material.icons.rounded.AddToQueue
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.FilterList
 import androidx.compose.material.icons.rounded.GridView
@@ -250,6 +251,9 @@ fun PlayerScreen(
                 var showLocateButton by remember {
                     mutableStateOf(false)
                 }
+                var showCreatePlaylistButton by remember {
+                    mutableStateOf(false)
+                }
                 var onLocateClick by remember {
                     mutableStateOf(suspend {})
                 }
@@ -282,47 +286,77 @@ fun PlayerScreen(
                         val genrePlaylists by viewModel.genrePlaylists.collectAsState()
                         val folderPlaylists by viewModel.folderPlaylists.collectAsState()
 
-                        val gridState = rememberLazyGridState()
+                        val playlistsGridState = rememberLazyGridState()
+                        val tracksGridState = rememberLazyGridState()
+                        val albumsGridState = rememberLazyGridState()
+                        val artistsGridState = rememberLazyGridState()
+                        val genresGridState = rememberLazyGridState()
+                        val foldersGridState = rememberLazyGridState()
                         val gridPlaylists by viewModel.settings.gridPlaylists.collectAsState()
 
                         val tabs by viewModel.settings.tabs.collectAsState()
+                        val gridStates = remember(tabs) {
+                            tabs.map { tab ->
+                                when (tab) {
+                                    Tab.Playlists -> playlistsGridState
+                                    Tab.Tracks -> tracksGridState
+                                    Tab.Albums -> albumsGridState
+                                    Tab.Artists -> artistsGridState
+                                    Tab.Genres -> genresGridState
+                                    Tab.Folders -> foldersGridState
+                                }
+                            }
+                        }
                         var selectedTab by rememberSaveable {
                             mutableStateOf(viewModel.settings.defaultTab)
                         }
+                        LaunchedEffect(selectedTab) {
+                            showCreatePlaylistButton = selectedTab == Tab.Playlists
+                        }
+                        val activeGridState = gridStates[tabs.indexOf(selectedTab).coerceAtLeast(0)]
 
-                        val shouldShowLocateButton by remember(currentTrack, trackList) {
+                        val shouldShowLocateButton by remember(currentTrack, trackList, activeGridState) {
                             derivedStateOf {
+                                val currentTrackIndex = currentTrack?.uri?.let { currentTrackUri ->
+                                    trackList.indexOfFirst { it.uri == currentTrackUri }
+                                } ?: -1
                                 selectedTab == Tab.Tracks &&
-                                        currentTrack != null &&
-                                        gridState.layoutInfo.visibleItemsInfo.fastFirstOrNull {
-                                            it.index == trackList.indexOf(currentTrack)
+                                        currentTrackIndex >= 0 &&
+                                        activeGridState.layoutInfo.visibleItemsInfo.fastFirstOrNull {
+                                            it.index == currentTrackIndex
                                         } == null
                             }
                         }
-                        onLocateClick = remember(currentTrack, trackList) {
+                        onLocateClick = remember(currentTrack?.uri, trackList, activeGridState) {
                             {
-                                val currentTrackIndex = trackList.indexOf(currentTrack)
-                                val preAnimateItemIndex = if (
-                                    gridState.firstVisibleItemIndex < currentTrackIndex
-                                ) {
-                                    (currentTrackIndex - 5).coerceAtLeast(0)
-                                } else currentTrackIndex + 5
-                                gridState.scrollToItem(preAnimateItemIndex)
-                                gridState.animateScrollToItem(currentTrackIndex)
+                                val currentTrackIndex = currentTrack?.uri?.let { currentTrackUri ->
+                                    trackList.indexOfFirst { it.uri == currentTrackUri }
+                                } ?: -1
+                                if (currentTrackIndex >= 0) {
+                                    val preAnimateItemIndex = if (
+                                        activeGridState.firstVisibleItemIndex < currentTrackIndex
+                                    ) {
+                                        (currentTrackIndex - 5).coerceAtLeast(0)
+                                    } else {
+                                        (currentTrackIndex + 5).coerceAtMost(trackList.lastIndex)
+                                    }
+                                    activeGridState.scrollToItem(preAnimateItemIndex)
+                                    activeGridState.animateScrollToItem(currentTrackIndex)
+                                }
                             }
                         }
                         LaunchedEffect(shouldShowLocateButton) {
                             showLocateButton = shouldShowLocateButton
                         }
 
-                        val isScrolledEnough by remember {
+                        val isScrolledEnough by remember(activeGridState) {
                             derivedStateOf {
-                                gridState.firstVisibleItemIndex >= 5
+                                activeGridState.firstVisibleItemIndex >= 5
                             }
                         }
                         onScrollToTopClick = {
-                            gridState.scrollToItem(5)
-                            gridState.animateScrollToItem(0)
+                            activeGridState.scrollToItem(5)
+                            activeGridState.animateScrollToItem(0)
                         }
 
                         LaunchedEffect(isScrolledEnough) {
@@ -330,7 +364,7 @@ fun PlayerScreen(
                         }
 
                         MainPlayerScreen(
-                            gridState = gridState,
+                            gridStates = gridStates,
                             topBarTabs = tabs,
                             defaultTab = viewModel.settings.defaultTab,
                             onTabChange = {
@@ -456,6 +490,9 @@ fun PlayerScreen(
                     }
 
                     composable<PlayerRoutes.Playlist> {
+                        LaunchedEffect(Unit) {
+                            showCreatePlaylistButton = false
+                        }
                         val listState = rememberLazyListState()
                         val isScrolledEnough by remember {
                             derivedStateOf {
@@ -554,6 +591,9 @@ fun PlayerScreen(
                     }
 
                     composable<PlayerRoutes.MutablePlaylist> {
+                        LaunchedEffect(Unit) {
+                            showCreatePlaylistButton = false
+                        }
                         var showRenameSheet by remember {
                             mutableStateOf(false)
                         }
@@ -725,6 +765,12 @@ fun PlayerScreen(
                             onScrollToTopClick = onScrollToTopClick,
                             showLocateButton = showLocateButton,
                             onLocateClick = onLocateClick,
+                            showCreatePlaylistButton = showCreatePlaylistButton,
+                            onCreatePlaylistClick = {
+                                showAddToOrCreatePlaylistSheet = true
+                                showCreatePlaylistOnly = true
+                                tracksToAddToPlaylist = null
+                            },
                             modifier = Modifier.align(Alignment.End)
                         )
                     }
@@ -931,6 +977,12 @@ fun PlayerScreen(
                     onScanFoldersClick = {
                         viewModel.onEvent(PlayerScreenEvent.OnScanFoldersClick)
                     },
+                    onFetchLyricsForAllTracksClick = {
+                        viewModel.onEvent(PlayerScreenEvent.OnFetchLyricsForAllTracksClick)
+                    },
+                    onCancelFetchLyricsForAllTracksClick = {
+                        viewModel.onEvent(PlayerScreenEvent.OnCancelFetchLyricsForAllTracksClick)
+                    },
                     onCloseClick = {
                         viewModel.onEvent(PlayerScreenEvent.OnCloseSettingsClick)
                     },
@@ -944,7 +996,7 @@ fun PlayerScreen(
 
 @Composable
 fun MainPlayerScreen(
-    gridState: LazyGridState = rememberLazyGridState(),
+    gridStates: List<LazyGridState>,
     topBarTabs: List<Tab>,
     defaultTab: Tab,
     onTabChange: (Tab) -> Unit = {},
@@ -1013,7 +1065,7 @@ fun MainPlayerScreen(
     }
 
     LazyGridWithCollapsibleTabsTopBar(
-        gridState = gridState,
+        gridStates = gridStates,
         topBarTabs = topBarTabs,
         defaultSelectedTab = defaultTab,
         onTabChange = {
@@ -1688,6 +1740,8 @@ fun ScrollToTopAndLocateButtons(
     onScrollToTopClick: suspend () -> Unit,
     showLocateButton: Boolean,
     onLocateClick: suspend () -> Unit,
+    showCreatePlaylistButton: Boolean = false,
+    onCreatePlaylistClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -1701,14 +1755,18 @@ fun ScrollToTopAndLocateButtons(
         val coroutineScope = rememberCoroutineScope()
 
         AnimatedVisibility(
-            visible = showLocateButton,
+            visible = showLocateButton || showCreatePlaylistButton,
             enter = expandHorizontally() + fadeIn(),
             exit = shrinkHorizontally() + fadeOut(),
         ) {
             FilledTonalIconButton(
                 onClick = {
-                    coroutineScope.launch {
-                        onLocateClick()
+                    if (showCreatePlaylistButton) {
+                        onCreatePlaylistClick()
+                    } else {
+                        coroutineScope.launch {
+                            onLocateClick()
+                        }
                     }
                 },
                 colors = IconButtonDefaults.iconButtonColors(
@@ -1717,8 +1775,13 @@ fun ScrollToTopAndLocateButtons(
                 )
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.MyLocation,
-                    contentDescription = context.resources.getString(R.string.scroll_to_current_track)
+                    imageVector = if (showCreatePlaylistButton) {
+                        Icons.Rounded.Add
+                    } else Icons.Rounded.MyLocation,
+                    contentDescription = context.resources.getString(
+                        if (showCreatePlaylistButton) R.string.create_playlist
+                        else R.string.scroll_to_current_track
+                    )
                 )
             }
         }

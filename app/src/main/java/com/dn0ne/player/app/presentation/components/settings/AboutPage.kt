@@ -1,5 +1,6 @@
 package com.dn0ne.player.app.presentation.components.settings
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -11,11 +12,13 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.QuestionAnswer
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +35,8 @@ import androidx.compose.ui.unit.lerp
 import com.dn0ne.player.R
 import com.dn0ne.player.app.presentation.components.topbar.ColumnWithCollapsibleTopBar
 import com.dn0ne.player.core.presentation.AppDetails
+import com.dn0ne.player.ui.theme.lyrionBranded
+import com.dn0ne.player.ui.theme.lyrionPurple
 
 @Composable
 fun AboutPage(
@@ -43,70 +48,77 @@ fun AboutPage(
         mutableFloatStateOf(0f)
     }
 
-    ColumnWithCollapsibleTopBar(
-        topBarContent = {
-            IconButton(
-                onClick = onBackClick,
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(horizontal = 12.dp, vertical = 4.dp)
+    val aboutColorScheme = MaterialTheme.colorScheme.lyrionBranded()
+
+    MaterialTheme(colorScheme = aboutColorScheme) {
+        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
+            ColumnWithCollapsibleTopBar(
+                topBarContent = {
+                    IconButton(
+                        onClick = onBackClick,
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.ArrowBackIosNew,
+                            contentDescription = context.resources.getString(R.string.back)
+                        )
+                    }
+
+                    Text(
+                        text = context.resources.getString(R.string.about_app),
+                        fontSize = lerp(
+                            MaterialTheme.typography.titleLarge.fontSize,
+                            MaterialTheme.typography.displaySmall.fontSize,
+                            collapseFraction
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(horizontal = 16.dp)
+                    )
+                },
+                collapseFraction = {
+                    collapseFraction = it
+                },
+                contentPadding = PaddingValues(horizontal = 24.dp),
+                contentHorizontalAlignment = Alignment.CenterHorizontally,
+                contentVerticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = modifier
+                    .fillMaxSize()
+                    .background(lyrionPurple)
+                    .safeDrawingPadding()
             ) {
-                Icon(
-                    imageVector = Icons.Rounded.ArrowBackIosNew,
-                    contentDescription = context.resources.getString(R.string.back)
+                AppDetails(
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val uriHandler = LocalUriHandler.current
+                val repoIcon = ImageVector.vectorResource(R.drawable.source_control)
+                SettingsGroup(
+                    items = listOf(
+                        SettingsItem(
+                            title = context.resources.getString(R.string.repo),
+                            supportingText = context.resources.getString(R.string.repo_explain),
+                            icon = repoIcon,
+                            onClick = {
+                                uriHandler.openUri(context.resources.getString(R.string.repo_url))
+                            }
+                        ),
+                        SettingsItem(
+                            title = context.resources.getString(R.string.feedback),
+                            supportingText = context.resources.getString(R.string.feedback_explain),
+                            icon = Icons.Rounded.QuestionAnswer,
+                            onClick = {
+                                uriHandler.openUri(context.resources.getString(R.string.feedback_url))
+                            }
+                        )
+                    )
                 )
             }
-
-            Text(
-                text = context.resources.getString(R.string.about_app),
-                fontSize = lerp(
-                    MaterialTheme.typography.titleLarge.fontSize,
-                    MaterialTheme.typography.displaySmall.fontSize,
-                    collapseFraction
-                ),
-                textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 16.dp)
-            )
-        },
-        collapseFraction = {
-            collapseFraction = it
-        },
-        contentPadding = PaddingValues(horizontal = 24.dp),
-        contentHorizontalAlignment = Alignment.CenterHorizontally,
-        contentVerticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier
-            .fillMaxSize()
-            .safeDrawingPadding()
-    ) {
-        AppDetails(
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        val uriHandler = LocalUriHandler.current
-        val repoIcon = ImageVector.vectorResource(R.drawable.source_control)
-        SettingsGroup(
-            items = listOf(
-                SettingsItem(
-                    title = context.resources.getString(R.string.repo),
-                    supportingText = context.resources.getString(R.string.repo_explain),
-                    icon = repoIcon,
-                    onClick = {
-                        uriHandler.openUri(context.resources.getString(R.string.repo_url))
-                    }
-                ),
-                SettingsItem(
-                    title = context.resources.getString(R.string.feedback),
-                    supportingText = context.resources.getString(R.string.feedback_explain),
-                    icon = Icons.Rounded.QuestionAnswer,
-                    onClick = {
-                        uriHandler.openUri(context.resources.getString(R.string.feedback_url))
-                    }
-                )
-            )
-        )
+        }
     }
 }

@@ -53,6 +53,7 @@ class Settings(context: Context) {
     private val defaultTabKey = "default-tab"
 
     private val jumpToBeginningKey = "jump-to-beginning"
+    private val floatingMiniPlayerKey = "floating-mini-player"
 
     private val gridPlaylistsKey = "grid-playlists"
 
@@ -274,7 +275,7 @@ class Settings(context: Context) {
         }
 
     private val _isScanModeInclusive = MutableStateFlow(
-        sharedPreferences.getBoolean(isScanModeInclusiveKey, true)
+        sharedPreferences.getBoolean(isScanModeInclusiveKey, false)
     )
     val isScanModeInclusive = _isScanModeInclusive.asStateFlow()
     fun updateIsScanModeInclusive(value: Boolean) {
@@ -375,6 +376,18 @@ class Settings(context: Context) {
                 apply()
             }
         }
+
+    private val _floatingMiniPlayer = MutableStateFlow(
+        sharedPreferences.getBoolean(floatingMiniPlayerKey, false)
+    )
+    val floatingMiniPlayer = _floatingMiniPlayer.asStateFlow()
+    fun updateFloatingMiniPlayer(value: Boolean) {
+        _floatingMiniPlayer.update { value }
+        with(sharedPreferences.edit()) {
+            putBoolean(floatingMiniPlayerKey, value)
+            apply()
+        }
+    }
 
     private val _gridPlaylist = MutableStateFlow(
         sharedPreferences.getBoolean(gridPlaylistsKey, true)

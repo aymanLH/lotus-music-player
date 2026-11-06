@@ -5,7 +5,9 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -16,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import com.dn0ne.player.setup.presentation.components.AudioPermissionPage
 import com.dn0ne.player.setup.presentation.components.MusicScanPage
 import com.dn0ne.player.setup.presentation.components.WelcomePage
+import com.dn0ne.player.ui.theme.lyrionBranded
 
 @Composable
 fun SetupScreen(
@@ -29,72 +32,79 @@ fun SetupScreen(
 
     val navController = rememberNavController()
 
-    NavHost(
-        navController = navController,
-        startDestination = startDestination,
-        enterTransition = {
-            slideInHorizontally(initialOffsetX = { it })
-        },
-        exitTransition = {
-            slideOutHorizontally(targetOffsetX = { -it })
-        },
-        popEnterTransition = {
-            slideInHorizontally(initialOffsetX = { -it })
-        },
-        popExitTransition = {
-            slideOutHorizontally(targetOffsetX = { it })
+    val setupColorScheme = MaterialTheme.colorScheme.lyrionBranded()
 
-        }
-    ) {
-        composable<SetupPage.Welcome> {
-            WelcomePage(
-                onGetStartedClick = {
-                    navController.navigate(SetupPage.AudioPermission)
+    MaterialTheme(colorScheme = setupColorScheme) {
+        CompositionLocalProvider(
+            LocalContentColor provides MaterialTheme.colorScheme.onSurface
+        ) {
+            NavHost(
+                navController = navController,
+                startDestination = startDestination,
+                enterTransition = {
+                    slideInHorizontally(initialOffsetX = { it })
                 },
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(color = MaterialTheme.colorScheme.background)
-                    .safeDrawingPadding()
-            )
-        }
+                exitTransition = {
+                    slideOutHorizontally(targetOffsetX = { -it })
+                },
+                popEnterTransition = {
+                    slideInHorizontally(initialOffsetX = { -it })
+                },
+                popExitTransition = {
+                    slideOutHorizontally(targetOffsetX = { it })
+                }
+            ) {
+                composable<SetupPage.Welcome> {
+                    WelcomePage(
+                        onGetStartedClick = {
+                            navController.navigate(SetupPage.AudioPermission)
+                        },
+                        modifier = modifier
+                            .fillMaxSize()
+                            .background(color = MaterialTheme.colorScheme.background)
+                            .safeDrawingPadding()
+                    )
+                }
 
-        composable<SetupPage.AudioPermission> {
-            val isAudioPermissionGranted = viewModel.isAudioPermissionGranted.collectAsState()
-            AudioPermissionPage(
-                onGrantAudioPermissionClick = requestAudioPermission,
-                onNextClick = {
-                    if (viewModel.isSetupComplete) {
-                        viewModel.onFinishSetupClick()
-                        onFinishSetupClick()
-                    } else {
-                        navController.navigate(SetupPage.MusicScan)
-                    }
-                },
-                isAudioPermissionGrantedState = isAudioPermissionGranted,
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(color = MaterialTheme.colorScheme.background)
-                    .safeDrawingPadding()
-            )
-        }
+                composable<SetupPage.AudioPermission> {
+                    val isAudioPermissionGranted = viewModel.isAudioPermissionGranted.collectAsState()
+                    AudioPermissionPage(
+                        onGrantAudioPermissionClick = requestAudioPermission,
+                        onNextClick = {
+                            if (viewModel.isSetupComplete) {
+                                viewModel.onFinishSetupClick()
+                                onFinishSetupClick()
+                            } else {
+                                navController.navigate(SetupPage.MusicScan)
+                            }
+                        },
+                        isAudioPermissionGrantedState = isAudioPermissionGranted,
+                        modifier = modifier
+                            .fillMaxSize()
+                            .background(color = MaterialTheme.colorScheme.background)
+                            .safeDrawingPadding()
+                    )
+                }
 
-        composable<SetupPage.MusicScan> {
-            val foldersWithAudio by viewModel.foldersWithAudio.collectAsState()
-            MusicScanPage(
-                settings = viewModel.settings,
-                musicScanner = viewModel.musicScanner,
-                onFolderPick = onFolderPick,
-                foldersWithAudio = foldersWithAudio,
-                onScanFoldersClick = viewModel::onScanFoldersClick,
-                onNextClick = {
-                    viewModel.onFinishSetupClick()
-                    onFinishSetupClick()
-                },
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(color = MaterialTheme.colorScheme.background)
-                    .safeDrawingPadding()
-            )
+                composable<SetupPage.MusicScan> {
+                    val foldersWithAudio by viewModel.foldersWithAudio.collectAsState()
+                    MusicScanPage(
+                        settings = viewModel.settings,
+                        musicScanner = viewModel.musicScanner,
+                        onFolderPick = onFolderPick,
+                        foldersWithAudio = foldersWithAudio,
+                        onScanFoldersClick = viewModel::onScanFoldersClick,
+                        onNextClick = {
+                            viewModel.onFinishSetupClick()
+                            onFinishSetupClick()
+                        },
+                        modifier = modifier
+                            .fillMaxSize()
+                            .background(color = MaterialTheme.colorScheme.background)
+                            .safeDrawingPadding()
+                    )
+                }
+            }
         }
     }
 }

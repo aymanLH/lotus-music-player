@@ -1,6 +1,6 @@
 <resources>
     <!-- App name -->
-    <string name="app_name" translatable="false">Lotus</string>
+    <string name="app_name" translatable="false">Lyrion</string>
 
     <!-- Links -->
     <!-- Lyrics provider link -->
@@ -19,7 +19,7 @@
     <string name="get_started">Get started</string>
     <string name="permissions">Permissions</string>
     <string name="audio">Audio</string>
-    <string name="explain_audio_permission_requirement">Lotus needs it to play your wonderful music</string>
+    <string name="explain_audio_permission_requirement">Lyrion needs it to play your wonderful music</string>
     <string name="grant_permission">Grant permission</string>
     <string name="next">Next</string>
     <string name="grant_permission_in_settings">Please, grant permission in Settings</string>
@@ -182,6 +182,15 @@
     <string name="import_from_file">Import from file</string>
     <string name="write_to_tag">Write to tag</string>
     <string name="fetch_from_lrclib">Fetch from LRCLIB</string>
+    <string name="fetch_lyrics_for_all_tracks">Fetch lyrics for all tracks</string>
+    <string name="fetching_lyrics_for_all_tracks">Fetching lyrics…</string>
+    <string name="fetch_all_lyrics_explain">Fetch missing lyrics sequentially from LRCLIB and save them locally.</string>
+    <string name="fetch_all_lyrics_progress">Checked %1$d of %2$d tracks · lyrics available: %3$d</string>
+    <string name="fetch_all_lyrics_finished">Finished: lyrics available for %3$d tracks after checking %1$d of %2$d.</string>
+    <string name="fetch_all_lyrics_stopped">Stopped after checking %1$d of %2$d tracks. Lyrics available: %3$d.</string>
+    <string name="fetch_all_lyrics_rate_limited">LRCLIB is limiting requests or temporarily unavailable. Wait a bit and retry. Checked %1$d of %2$d; lyrics available: %3$d.</string>
+    <string name="fetch_all_lyrics_network_stopped">Network issue. Check your connection and retry. Checked %1$d of %2$d; lyrics available: %3$d.</string>
+    <string name="no_tracks_to_fetch_lyrics">No tracks to fetch.</string>
     <string name="publish_on_lrclib">Publish on LRCLIB</string>
     <string name="unable_to_publish">Unable to publish: title, artist or album not specified.</string>
     <string name="published_successfully">Published successfully.</string>
@@ -272,6 +281,8 @@
     <string name="equalizer_explain">Manually adjust sound</string>
     <string name="jump_to_beginning">Jump to beginning</string>
     <string name="jump_to_beginning_explain">Restart current track on first press of previous button</string>
+    <string name="floating_mini_player">Floating mini player</string>
+    <string name="floating_mini_player_explain">Show the mini player as a rounded floating bar above the bottom edge</string>
 
     <!-- Tabs settings -->
     <string name="tabs">Tabs</string>

@@ -5,8 +5,8 @@
     </style>
 
     <style name="Theme.MusicPlayer.Splash" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/black</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/animated_logo</item>
+        <item name="windowSplashScreenBackground">#32164D</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/lyrion_no_bg</item>
         <item name="windowSplashScreenAnimationDuration">300</item>
         <item name="postSplashScreenTheme">@style/Theme.MusicPlayer</item>
     </style>

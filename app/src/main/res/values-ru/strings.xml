@@ -7,7 +7,7 @@
     <string name="get_started">Начать</string>
     <string name="permissions">Разрешения</string>
     <string name="audio">Аудио</string>
-    <string name="explain_audio_permission_requirement">Lotus требует его, чтобы воспроизводить вашу замечательную музыку</string>
+    <string name="explain_audio_permission_requirement">Lyrion требует его, чтобы воспроизводить вашу замечательную музыку</string>
     <string name="grant_permission">Дать разрешение</string>
     <string name="next">Далее</string>
     <string name="grant_permission_in_settings">Пожалуйста, дайте разрешение в настройках</string>
@@ -170,6 +170,15 @@
     <string name="import_from_file">Импортировать из файла</string>
     <string name="write_to_tag">Записать в тег</string>
     <string name="fetch_from_lrclib">Взять из LRCLIB</string>
+    <string name="fetch_lyrics_for_all_tracks">Загрузить текст для всех треков</string>
+    <string name="fetching_lyrics_for_all_tracks">Загрузка текста…</string>
+    <string name="fetch_all_lyrics_explain">Последовательно загрузить недостающий текст из LRCLIB и сохранить локально.</string>
+    <string name="fetch_all_lyrics_progress">Проверено %1$d из %2$d треков · текст доступен для: %3$d</string>
+    <string name="fetch_all_lyrics_finished">Готово: текст доступен для %3$d треков, проверено %1$d из %2$d.</string>
+    <string name="fetch_all_lyrics_stopped">Остановлено после проверки %1$d из %2$d треков. Текст доступен для: %3$d.</string>
+    <string name="fetch_all_lyrics_rate_limited">LRCLIB ограничивает запросы или временно недоступна. Подождите и попробуйте снова. Проверено %1$d из %2$d; текст доступен для: %3$d.</string>
+    <string name="fetch_all_lyrics_network_stopped">Проблема с сетью. Проверьте соединение и повторите попытку. Проверено %1$d из %2$d; текст доступен для: %3$d.</string>
+    <string name="no_tracks_to_fetch_lyrics">Нет треков для загрузки.</string>
     <string name="publish_on_lrclib">Опубликовать на LRCLIB</string>
     <string name="unable_to_publish">Невозможно опубликовать: не указаны название, исполнитель или альбом.</string>
     <string name="published_successfully">Опубликован успешно.</string>
@@ -258,6 +267,8 @@
     <string name="changes_will_take_effect_on_next_launch">Изменения вступят в силу со следующего запуска.</string>
     <string name="equalizer">Эквалайзер</string>
     <string name="equalizer_explain">Ручное регулирование звука</string>
+    <string name="floating_mini_player">Плавающий мини-плеер</string>
+    <string name="floating_mini_player_explain">Показывать мини-плеер в виде плавающей панели с закруглёнными углами</string>
 
     <!-- Tabs settings -->
     <string name="tabs">Вкладки</string>

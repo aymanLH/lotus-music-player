@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.FilterCenterFocus
+import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
@@ -124,6 +125,15 @@ fun PlaybackSettings(
                 settings.jumpToBeginning = it
                 jumpToBeginning = it
             }
+        )
+
+        val floatingMiniPlayer by settings.floatingMiniPlayer.collectAsState()
+        SettingSwitch(
+            title = context.resources.getString(R.string.floating_mini_player),
+            supportingText = context.resources.getString(R.string.floating_mini_player_explain),
+            icon = Icons.Rounded.PictureInPictureAlt,
+            isChecked = floatingMiniPlayer,
+            onCheckedChange = settings::updateFloatingMiniPlayer
         )
 
         val isEqEnabled by equalizerController.isEqEnabled.collectAsState()

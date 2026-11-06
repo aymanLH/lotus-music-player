@@ -129,6 +129,7 @@ fun PlayerSheet(
     modifier: Modifier = Modifier
 ) {
     val playbackState by playbackStateFlow.collectAsState()
+    val floatingMiniPlayer by settings.floatingMiniPlayer.collectAsState()
     val isExpanded by remember {
         derivedStateOf {
             playbackState.isPlayerExpanded
@@ -166,6 +167,11 @@ fun PlayerSheet(
         label = "player-content",
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                if (!isExpanded && floatingMiniPlayer) {
+                    Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)
+                } else Modifier
+            )
             .graphicsLayer {
                 this.translationY = translationY.value
 
@@ -178,8 +184,8 @@ fun PlayerSheet(
                     RoundedCornerShape(
                         topStart = 36.dp,
                         topEnd = 36.dp,
-                        bottomStart = cornerRadius,
-                        bottomEnd = cornerRadius
+                        bottomStart = if (floatingMiniPlayer) 36.dp else cornerRadius,
+                        bottomEnd = if (floatingMiniPlayer) 36.dp else cornerRadius
                     )
                 }
             }
@@ -231,6 +237,7 @@ fun PlayerSheet(
             false -> {
                 BottomPlayer(
                     playbackStateFlow = playbackStateFlow,
+                    isFloating = floatingMiniPlayer,
                     onClick = {
                         onPlayerExpandedChange(true)
                         translationY.updateBounds(
@@ -325,6 +332,7 @@ fun PlayerSheet(
 @Composable
 fun BottomPlayer(
     playbackStateFlow: StateFlow<PlaybackState>,
+    isFloating: Boolean,
     onClick: () -> Unit,
     onPlayClick: () -> Unit,
     onPauseClick: () -> Unit,
@@ -373,8 +381,13 @@ fun BottomPlayer(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .navigationBarsPadding()
-                .padding(28.dp),
+                .then(
+                    if (isFloating) Modifier else Modifier.navigationBarsPadding()
+                )
+                .padding(
+                    horizontal = 28.dp,
+                    vertical = if (isFloating) 12.dp else 28.dp
+                ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

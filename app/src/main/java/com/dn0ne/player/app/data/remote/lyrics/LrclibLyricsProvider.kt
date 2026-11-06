@@ -27,6 +27,7 @@ import io.ktor.http.contentType
 import io.ktor.http.headers
 import io.ktor.serialization.JsonConvertException
 import kotlinx.serialization.Serializable
+import kotlinx.coroutines.delay
 import java.net.SocketException
 import java.nio.channels.UnresolvedAddressException
 import java.security.MessageDigest
@@ -45,8 +46,7 @@ class LrclibLyricsProvider(
             return Result.Error(DataError.Network.BadRequest)
         }
 
-        val response = try {
-            client.get(lrclibEndpoint) {
+        suspend fun requestLyrics() = client.get(lrclibEndpoint) {
                 url {
                     appendPathSegments("get")
                     parameters.append("track_name", track.title)
@@ -54,13 +54,30 @@ class LrclibLyricsProvider(
                     track.album?.let {
                         parameters.append("album_name", it)
                     }
-                    parameters.append("duration", (track.duration / 1000).toString())
+                    val durationSeconds = track.duration / 1000
+                    if (durationSeconds in 1..3600) {
+                        parameters.append("duration", durationSeconds.toString())
+                    }
                 }
                 headers {
                     append(HttpHeaders.Accept, ContentType.Application.Json.toString())
                     append(HttpHeaders.UserAgent, userAgent)
                 }
             }
+
+        val response = try {
+            val firstResponse = requestLyrics()
+            if (
+                firstResponse.status == HttpStatusCode.TooManyRequests ||
+                firstResponse.status == HttpStatusCode.ServiceUnavailable
+            ) {
+                val retryAfterSeconds = firstResponse.headers[HttpHeaders.RetryAfter]
+                    ?.toLongOrNull()
+                    ?.coerceAtLeast(1)
+                    ?: 1
+                delay(retryAfterSeconds * 1000L)
+                requestLyrics()
+            } else firstResponse
         } catch (e: UnresolvedAddressException) {
             Log.i(logTag, e.message.toString())
             return Result.Error(DataError.Network.NoInternet)
@@ -71,6 +88,10 @@ class LrclibLyricsProvider(
         }
 
         when (response.status) {
+            HttpStatusCode.BadRequest -> {
+                return Result.Error(DataError.Network.BadRequest)
+            }
+
             HttpStatusCode.OK -> {
                 try {
                     val lyricsDto: LyricsDto = response.body()
@@ -99,6 +120,11 @@ class LrclibLyricsProvider(
 
             HttpStatusCode.NotFound -> {
                 return Result.Error(DataError.Network.NotFound)
+            }
+
+            HttpStatusCode.TooManyRequests,
+            HttpStatusCode.ServiceUnavailable -> {
+                return Result.Error(DataError.Network.ServiceUnavailable)
             }
 
             else -> {

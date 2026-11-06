@@ -59,6 +59,8 @@ sealed interface PlayerScreenEvent {
     data object OnSettingsClick: PlayerScreenEvent
     data object OnCloseSettingsClick: PlayerScreenEvent
     data object OnScanFoldersClick: PlayerScreenEvent
+    data object OnFetchLyricsForAllTracksClick: PlayerScreenEvent
+    data object OnCancelFetchLyricsForAllTracksClick: PlayerScreenEvent
 
     data class OnRemoveFromQueueClick(val index: Int): PlayerScreenEvent
     data class OnReorderingQueue(val from: Int, val to: Int): PlayerScreenEvent

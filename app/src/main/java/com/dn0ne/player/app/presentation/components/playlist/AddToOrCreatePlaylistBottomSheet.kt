@@ -9,11 +9,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
@@ -204,18 +204,17 @@ fun AddToOrCreatePlaylistBottomSheet(
                         Spacer(modifier = Modifier.height(12.dp))
 
                         if (playlists.isNotEmpty()) {
-                            LazyVerticalGrid(
-                                columns = GridCells.Adaptive(150.dp),
-                                verticalArrangement = Arrangement.spacedBy(16.dp),
-                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            LazyColumn(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .heightIn(max = 320.dp)
                             ) {
                                 items(
                                     items = playlists,
                                     key = { "${it.name}-${it.trackList}" }
                                 ) { playlist ->
-                                    PlaylistCard(
+                                    PlaylistRow(
                                         title = playlist.name
                                             ?: context.resources.getString(R.string.unknown),
                                         trackCount = playlist.trackList.size,
@@ -223,11 +222,13 @@ fun AddToOrCreatePlaylistBottomSheet(
                                             .take(4)
                                             .map { it.coverArtUri },
                                         modifier = Modifier
-                                            .clip(ShapeDefaults.Large)
+                                            .fillMaxWidth()
+                                            .clip(ShapeDefaults.Medium)
                                             .clickable {
                                                 onPlaylistSelection(playlist)
                                                 onDismissRequest()
                                             }
+                                            .padding(8.dp)
                                     )
                                 }
                             }

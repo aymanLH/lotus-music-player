@@ -1,7 +1,7 @@
 <div align="center">
   <img src="fastlane/metadata/android/en-US/images/icon-fit.png" width="200px" />
 
-  # Lotus
+  # Lyrion
 
   ### Music player for Android
   
@@ -35,7 +35,7 @@ Latest stable version is available on [GitHub releases](https://github.com/dn0ne
 Stable releases are also available on [F-Droid](https://f-droid.org/packages/com.dn0ne.lotus)
 
 ## Support
-If you enjoy using Lotus, consider [buying me a coffee](https://en.liberapay.com/dn0ne/donate)!
+If you enjoy using Lyrion, consider [buying me a coffee](https://en.liberapay.com/dn0ne/donate)!
 
 ## Build
 1. **Get the Source Code**  
@@ -70,4 +70,4 @@ Lyrics UI is inspired by [Beautiful Lyrics](https://github.com/surfbryce/beautif
 [jaudiotagger](https://bitbucket.org/ijabz/jaudiotagger/src/master/)
 
 ## License
-Lotus is licensed under [GPLv3](LICENSE.md)
+Lyrion is licensed under [GPLv3](LICENSE.md)

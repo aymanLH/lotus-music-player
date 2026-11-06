@@ -32,6 +32,8 @@ import com.dn0ne.player.app.domain.track.format
 import com.dn0ne.player.app.presentation.PlayerScreenEvent.*
 import com.dn0ne.player.app.presentation.components.playback.PlaybackState
 import com.dn0ne.player.app.presentation.components.settings.SettingsSheetState
+import com.dn0ne.player.app.presentation.components.settings.LyricsFetchProgress
+import com.dn0ne.player.app.presentation.components.settings.LyricsFetchStopReason
 import com.dn0ne.player.app.presentation.components.snackbar.SnackbarController
 import com.dn0ne.player.app.presentation.components.snackbar.SnackbarEvent
 import com.dn0ne.player.app.presentation.components.trackinfo.ChangesSheetState
@@ -42,9 +44,12 @@ import com.dn0ne.player.app.presentation.components.trackinfo.TrackInfoSheetStat
 import com.dn0ne.player.core.data.MusicScanner
 import com.dn0ne.player.core.data.Settings
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.collectLatest
@@ -229,6 +234,7 @@ class PlayerViewModel(
     val pendingMetadata = _pendingMetadata.receiveAsFlow()
 
     private val _pendingTrackUris = Channel<Uri>()
+    private var lyricsFetchAllJob: Job? = null
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -1087,6 +1093,10 @@ class PlayerViewModel(
                 }
             }
 
+            OnFetchLyricsForAllTracksClick -> fetchLyricsForAllTracks()
+
+            OnCancelFetchLyricsForAllTracksClick -> lyricsFetchAllJob?.cancel()
+
             OnLyricsControlClick -> {
                 viewModelScope.launch(Dispatchers.IO) {
                     val track = lyricsTargetTrack() ?: return@launch
@@ -1449,6 +1459,113 @@ class PlayerViewModel(
         return lyrics
     }
 
+    private fun fetchLyricsForAllTracks() {
+        if (lyricsFetchAllJob?.isActive == true) return
+
+        val tracks = _trackList.value
+        _settingsSheetState.update {
+            it.copy(
+                lyricsFetchProgress = LyricsFetchProgress(
+                    isRunning = tracks.isNotEmpty(),
+                    isFinished = tracks.isEmpty(),
+                    total = tracks.size
+                )
+            )
+        }
+
+        lyricsFetchAllJob = viewModelScope.launch(Dispatchers.IO) {
+            var processed = 0
+            var found = 0
+            var shouldStop = false
+            var stopReason: LyricsFetchStopReason? = null
+            var hasMadeRequest = false
+
+            try {
+                for (track in tracks) {
+                    coroutineContext.ensureActive()
+                    val cachedLyrics = lyricsRepository.getLyricsByUri(track.uri.toString())
+                    if (cachedLyrics != null) {
+                        found++
+                    } else if (track.title != null && track.artist != null) {
+                        if (hasMadeRequest) delay(300)
+                        hasMadeRequest = true
+
+                        when (val result = lyricsProvider.getLyrics(track)) {
+                            is Result.Success -> {
+                                lyricsRepository.insertLyrics(result.data)
+                                found++
+                                if (_playbackState.value.currentTrack?.uri == track.uri) {
+                                    _playbackState.update {
+                                        it.copy(
+                                            lyrics = result.data,
+                                            isLoadingLyrics = false
+                                        )
+                                    }
+                                }
+                            }
+
+                            is Result.Error -> {
+                                when (result.error) {
+                                    DataError.Network.BadRequest,
+                                    DataError.Network.NotFound,
+                                    DataError.Network.ParseError -> Unit
+
+                                    else -> {
+                                        shouldStop = true
+                                        stopReason = when (result.error) {
+                                            DataError.Network.NoInternet,
+                                            DataError.Network.RequestTimeout -> LyricsFetchStopReason.Network
+
+                                            DataError.Network.ServiceUnavailable -> LyricsFetchStopReason.RateLimited
+                                            else -> LyricsFetchStopReason.Other
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    processed++
+                    _settingsSheetState.update {
+                        it.copy(
+                            lyricsFetchProgress = LyricsFetchProgress(
+                                isRunning = !shouldStop && processed < tracks.size,
+                                isFinished = shouldStop || processed == tracks.size,
+                                stoppedEarly = shouldStop,
+                                processed = processed,
+                                total = tracks.size,
+                                found = found,
+                                stopReason = stopReason
+                            )
+                        )
+                    }
+
+                    if (shouldStop || processed == tracks.size) break
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                shouldStop = true
+                stopReason = LyricsFetchStopReason.Other
+            } finally {
+                _settingsSheetState.update {
+                    it.copy(
+                        lyricsFetchProgress = it.lyricsFetchProgress.copy(
+                            isRunning = false,
+                            isFinished = true,
+                            stoppedEarly = shouldStop ||
+                                    (processed < tracks.size && !coroutineContext.isActive),
+                            processed = processed,
+                            total = tracks.size,
+                            found = found,
+                            stopReason = stopReason
+                        )
+                    )
+                }
+            }
+        }
+    }
+
     private suspend fun fetchLyrics(track: Track): Lyrics? {
         return withContext(Dispatchers.IO) {
             if (track.title == null || track.artist == null) {
@@ -1531,7 +1648,7 @@ class PlayerViewModel(
                 }
 
                 var lyrics: Lyrics? = lyricsRepository.getLyricsByUri(currentTrack.uri.toString())
-                    ?: fetchLyrics(currentTrack) ?: readLyricsFromTag(currentTrack)
+                    ?: readLyricsFromTag(currentTrack)
                         ?.also { lyricsRepository.insertLyrics(it) }
 
                 _playbackState.update {
