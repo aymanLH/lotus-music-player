@@ -119,6 +119,9 @@ fun PlayerSheet(
     onGoToAlbumClick: () -> Unit,
     onGoToArtistClick: () -> Unit,
     onLyricsClick: () -> Unit,
+    onPasteLyricsClick: () -> Unit,
+    onPickLyricsClick: () -> Unit,
+    onFetchLyricsFromRemoteClick: () -> Unit,
     onRemoveFromQueueClick: (Int) -> Unit,
     onReorderingQueue: (Int, Int) -> Unit,
     onTrackClick: (Track, Playlist) -> Unit,
@@ -275,6 +278,9 @@ fun PlayerSheet(
                     onGoToArtistClick = onGoToArtistClick,
                     onLyricsSheetExpandedChange = onLyricsSheetExpandedChange,
                     onLyricsClick = onLyricsClick,
+                    onPasteLyricsClick = onPasteLyricsClick,
+                    onPickLyricsClick = onPickLyricsClick,
+                    onFetchLyricsFromRemoteClick = onFetchLyricsFromRemoteClick,
                     lyricsTextStyle = MaterialTheme.typography.headlineMedium
                         .copy(
                             fontSize = settings.lyricsFontSize,
@@ -487,6 +493,9 @@ fun ExpandedPlayer(
     onGoToArtistClick: () -> Unit,
     onLyricsSheetExpandedChange: (Boolean) -> Unit,
     onLyricsClick: () -> Unit,
+    onPasteLyricsClick: () -> Unit,
+    onPickLyricsClick: () -> Unit,
+    onFetchLyricsFromRemoteClick: () -> Unit,
     lyricsTextStyle: TextStyle,
     lyricsContainerColor: Color,
     lyricsContentColor: Color,
@@ -892,6 +901,9 @@ fun ExpandedPlayer(
                 containerColor = lyricsContainerColor,
                 contentColor = lyricsContentColor,
                 onSeekTo = onSeekTo,
+                onPasteLyricsClick = onPasteLyricsClick,
+                onPickLyricsClick = onPickLyricsClick,
+                onFetchLyricsFromRemoteClick = onFetchLyricsFromRemoteClick,
                 modifier = Modifier.fillMaxSize()
             )
         }

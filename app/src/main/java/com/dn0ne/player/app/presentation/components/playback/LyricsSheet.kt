@@ -38,6 +38,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -94,6 +95,9 @@ fun LyricsSheet(
     contentColor: Color,
     onBackClick: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    onPasteLyricsClick: () -> Unit,
+    onPickLyricsClick: () -> Unit,
+    onFetchLyricsFromRemoteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     BackHandler {
@@ -123,6 +127,9 @@ fun LyricsSheet(
                 else -> null
             }
         )
+    }
+    var showLyricsEditSheet by remember {
+        mutableStateOf(false)
     }
 
     CompositionLocalProvider(
@@ -161,6 +168,20 @@ fun LyricsSheet(
                         Icon(
                             imageVector = Icons.Rounded.ArrowBackIosNew,
                             contentDescription = context.resources.getString(R.string.close_lyrics_sheet)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            showLyricsEditSheet = true
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Edit,
+                            contentDescription = context.resources.getString(R.string.edit_lyrics)
                         )
                     }
 
@@ -341,6 +362,26 @@ fun LyricsSheet(
                     }
                 }
             }
+        }
+
+        if (showLyricsEditSheet) {
+            LyricsEditBottomSheet(
+                onPasteLyricsClick = {
+                    showLyricsEditSheet = false
+                    onPasteLyricsClick()
+                },
+                onImportFromFileClick = {
+                    showLyricsEditSheet = false
+                    onPickLyricsClick()
+                },
+                onFetchFromRemoteClick = {
+                    showLyricsEditSheet = false
+                    onFetchLyricsFromRemoteClick()
+                },
+                onDismissRequest = {
+                    showLyricsEditSheet = false
+                }
+            )
         }
     }
 }

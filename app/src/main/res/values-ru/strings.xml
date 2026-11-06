@@ -178,6 +178,9 @@
     <!-- Lyrics sheet -->
     <string name="lyrics">Текст</string>
     <string name="close_lyrics_sheet">Закрыть текст трека</string>
+    <string name="edit_lyrics">Изменить текст</string>
+    <string name="paste_lyrics">Вставить текст</string>
+    <string name="clipboard_is_empty">Буфер обмена пуст</string>
     <string name="loading_lyrics">Загрузка текста</string>
     <string name="synced">Синхр.</string>
     <string name="plain">Обычный</string>

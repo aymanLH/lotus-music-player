@@ -1089,7 +1089,7 @@ class PlayerViewModel(
 
             OnLyricsControlClick -> {
                 viewModelScope.launch(Dispatchers.IO) {
-                    val track = _trackInfoSheetState.value.track ?: return@launch
+                    val track = lyricsTargetTrack() ?: return@launch
 
                     val lyricsFromRepository = lyricsRepository.getLyricsByUri(track.uri.toString())
                     var lyricsFromTag: Lyrics? = readLyricsFromTag(track)
@@ -1144,7 +1144,7 @@ class PlayerViewModel(
             }
 
             OnWriteLyricsToTagClick -> {
-                val track = _trackInfoSheetState.value.track ?: return
+                val track = lyricsTargetTrack() ?: return
 
                 _lyricsControlSheetState.value.lyricsFromRepository?.let { lyrics ->
                     val plain = lyrics.plain?.joinToString("\n")
@@ -1174,7 +1174,7 @@ class PlayerViewModel(
             }
 
             OnFetchLyricsFromRemoteClick -> {
-                val track = _trackInfoSheetState.value.track ?: return
+                val track = lyricsTargetTrack() ?: return
                 viewModelScope.launch {
                     _lyricsControlSheetState.update {
                         it.copy(
@@ -1190,16 +1190,22 @@ class PlayerViewModel(
                         )
                     }
 
-                    _playbackState.update {
-                        it.copy(
-                            lyrics = null
-                        )
+                    if (
+                        lyrics != null &&
+                        _playbackState.value.currentTrack?.uri == track.uri
+                    ) {
+                        _playbackState.update {
+                            it.copy(
+                                lyrics = lyrics,
+                                isLoadingLyrics = false
+                            )
+                        }
                     }
                 }
             }
 
             OnPublishLyricsOnRemoteClick -> {
-                val track = _trackInfoSheetState.value.track ?: return
+                val track = lyricsTargetTrack() ?: return
 
                 if (
                     track.title == null ||
@@ -1307,7 +1313,7 @@ class PlayerViewModel(
     }
 
     fun onLyricsPicked(lyrics: String) {
-        _trackInfoSheetState.value.track?.let { track ->
+        lyricsTargetTrack()?.let { track ->
             val lyrics = try {
                 val syncedLyrics = lyrics.toSyncedLyrics()
 
@@ -1333,7 +1339,37 @@ class PlayerViewModel(
                     lyricsFromRepository = lyrics
                 )
             }
+
+            if (_playbackState.value.currentTrack?.uri == track.uri) {
+                _playbackState.update {
+                    it.copy(
+                        lyrics = lyrics,
+                        isLoadingLyrics = false
+                    )
+                }
+            }
         }
+    }
+
+    fun onLyricsPasted(lyrics: String?) {
+        if (lyrics.isNullOrBlank()) {
+            viewModelScope.launch {
+                SnackbarController.sendEvent(
+                    SnackbarEvent(
+                        message = R.string.clipboard_is_empty
+                    )
+                )
+            }
+            return
+        }
+
+        onLyricsPicked(lyrics)
+    }
+
+    private fun lyricsTargetTrack(): Track? {
+        return if (_trackInfoSheetState.value.isShown) {
+            _trackInfoSheetState.value.track
+        } else _playbackState.value.currentTrack
     }
 
     private fun startPositionUpdate(): Job {

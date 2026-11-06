@@ -190,6 +190,9 @@
     <!-- Lyrics sheet -->
     <string name="lyrics">Lyrics</string>
     <string name="close_lyrics_sheet">Close lyrics sheet</string>
+    <string name="edit_lyrics">Edit lyrics</string>
+    <string name="paste_lyrics">Paste lyrics</string>
+    <string name="clipboard_is_empty">Clipboard is empty</string>
     <string name="loading_lyrics">Loading lyrics</string>
     <string name="synced">Synced</string>
     <string name="plain">Plain</string>

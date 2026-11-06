@@ -1,5 +1,7 @@
 package com.dn0ne.player.app.presentation
 
+import android.content.ClipboardManager
+import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -812,6 +814,19 @@ fun PlayerScreen(
                                 },
                                 onLyricsClick = {
                                     viewModel.onEvent(PlayerScreenEvent.OnLyricsClick)
+                                },
+                                onPasteLyricsClick = {
+                                    val lyrics = (context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager)
+                                        ?.primaryClip
+                                        ?.takeIf { it.itemCount > 0 }
+                                        ?.getItemAt(0)
+                                        ?.text
+                                        ?.toString()
+                                    viewModel.onLyricsPasted(lyrics)
+                                },
+                                onPickLyricsClick = onLyricsPick,
+                                onFetchLyricsFromRemoteClick = {
+                                    viewModel.onEvent(PlayerScreenEvent.OnFetchLyricsFromRemoteClick)
                                 },
                                 settings = viewModel.settings,
                                 onRemoveFromQueueClick = {
