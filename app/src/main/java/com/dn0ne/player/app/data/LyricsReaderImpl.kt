@@ -17,7 +17,7 @@ class LyricsReaderImpl(private val context: Context) : LyricsReader {
 
         var file: File? = null
         context.contentResolver.openInputStream(track.uri)?.use { input ->
-            val temp = File.createTempFile("temp_audio", ".${track.format}", context.cacheDir)
+            val temp = TempAudioCache.create(context, track.format)
             FileOutputStream(temp).use { output ->
                 input.copyTo(output)
             }
@@ -42,7 +42,7 @@ class LyricsReaderImpl(private val context: Context) : LyricsReader {
             )
         }
 
-        context.cacheDir?.deleteRecursively()
+        file?.delete()
         return Result.Success(lyrics)
     }
 }

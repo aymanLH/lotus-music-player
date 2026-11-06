@@ -19,7 +19,9 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -36,6 +38,7 @@ import coil3.memory.MemoryCache
 import coil3.request.transitionFactory
 import coil3.transition.CrossfadeTransition
 import com.dn0ne.player.app.data.MetadataWriter
+import com.dn0ne.player.app.data.TempAudioCache
 import com.dn0ne.player.app.domain.metadata.Metadata
 import com.dn0ne.player.app.domain.result.DataError
 import com.dn0ne.player.app.domain.result.Result
@@ -242,20 +245,35 @@ class MainActivity : ComponentActivity() {
 
                         composable<Routes.Player> {
                             val viewModel = getViewModel<PlayerViewModel>()
-                            val mediaSessionToken =
+                            val mediaSessionToken = remember {
                                 SessionToken(
                                     application,
                                     ComponentName(application, PlaybackService::class.java)
                                 )
+                            }
 
-                            val controllerFuture =
+                            // Build the controller once per composition instead of on every
+                            // recomposition, which used to leak one connection per redraw.
+                            val controllerFuture = remember {
                                 MediaController.Builder(application, mediaSessionToken).buildAsync()
-                            controllerFuture.addListener(
-                                {
-                                    viewModel.player = controllerFuture.get()
-                                },
-                                MoreExecutors.directExecutor()
-                            )
+                            }
+                            DisposableEffect(controllerFuture) {
+                                controllerFuture.addListener(
+                                    {
+                                        viewModel.player = controllerFuture.get()
+                                    },
+                                    MoreExecutors.directExecutor()
+                                )
+
+                                onDispose {
+                                    // The ViewModel survives a configuration change and keeps
+                                    // using this controller, so releasing it would leave the
+                                    // position loop talking to a released instance.
+                                    if (!this@MainActivity.isChangingConfigurations) {
+                                        MediaController.releaseFuture(controllerFuture)
+                                    }
+                                }
+                            }
 
                             val appearance by viewModel.settings.appearance.collectAsState()
                             val isDarkTheme = when (appearance) {
@@ -369,8 +387,8 @@ class MainActivity : ComponentActivity() {
                                 viewModel.parseM3U(name, content)
                             }
 
-                            if (viewModel.settings.scanOnAppLaunch.value) {
-                                lifecycleScope.launch {
+                            LaunchedEffect(Unit) {
+                                if (viewModel.settings.scanOnAppLaunch.value) {
                                     get<MusicScanner>().refreshMedia(showMessages = false)
                                 }
                             }
@@ -424,7 +442,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        cacheDir?.deleteRecursively()
+        // Only the temp audio files created by the tag editor / lyrics reader may be removed.
+        // Wiping the whole cache directory also destroys Coil's disk cache.
+        TempAudioCache.deleteAll(this)
         super.onStop()
     }
 

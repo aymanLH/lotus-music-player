@@ -68,6 +68,7 @@ android {
             applicationIdSuffix = ".debug"
         }
         release {
+            applicationIdSuffix = ".release"
             isMinifyEnabled = true
             isShrinkResources = false
             isCrunchPngs = false

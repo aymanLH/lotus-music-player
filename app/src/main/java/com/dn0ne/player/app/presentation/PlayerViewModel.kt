@@ -1345,7 +1345,7 @@ class PlayerViewModel(
                             position = player.currentPosition
                         )
                     }
-                    delay(50)
+                    delay(200)
                 }
             }
         }
