@@ -48,7 +48,7 @@ fun LazyGridScope.playlistRows(
                 GridItemSpan(maxLineSpan)
             }
         ) {
-            NothingYet()
+            NothingYet(iconSize = 125.dp)
         }
     }
 

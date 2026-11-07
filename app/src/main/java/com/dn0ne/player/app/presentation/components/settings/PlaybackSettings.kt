@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -135,6 +136,25 @@ fun PlaybackSettings(
             isChecked = floatingMiniPlayer,
             onCheckedChange = settings::updateFloatingMiniPlayer
         )
+
+        var floatingMiniPlayerHeight by remember {
+            mutableIntStateOf(settings.floatingMiniPlayerHeight.value)
+        }
+        AnimatedVisibility(visible = floatingMiniPlayer) {
+            SettingSlider(
+                title = context.resources.getString(R.string.floating_mini_player_height),
+                value = floatingMiniPlayerHeight.toFloat(),
+                valueToShow = "$floatingMiniPlayerHeight dp",
+                onValueChange = {
+                    floatingMiniPlayerHeight = it.toInt()
+                },
+                onValueChangeFinished = {
+                    settings.updateFloatingMiniPlayerHeight(floatingMiniPlayerHeight)
+                },
+                steps = 71,
+                valueRange = 56f..128f
+            )
+        }
 
         val isEqEnabled by equalizerController.isEqEnabled.collectAsState()
         SettingSwitch(

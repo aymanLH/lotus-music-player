@@ -253,6 +253,7 @@
     <string name="palette_monochrome">Монохромная</string>
     <string name="palette_fidelity">Верность</string>
     <string name="palette_content">Содержимое</string>
+    <string name="palette_album_cover">Обложка альбома</string>
 
     <string name="black_theme">Чёрная тема</string>
     <string name="black_theme_explain">Сделать тёмную тему по-настоящему тёмной</string>
@@ -260,6 +261,7 @@
     <string name="use_system_key_colors_explain">Использовать акцентные цвета системы</string>
     <string name="use_album_art_color">Цвет обложки</string>
     <string name="use_album_art_color_explain">Использовать доминирующий цвет обложки текущего трека</string>
+    <string name="color_intensity">Интенсивность цвета обложки</string>
 
     <!-- Playback settings -->
     <string name="audio_focus">Фокус аудио</string>
@@ -269,6 +271,7 @@
     <string name="equalizer_explain">Ручное регулирование звука</string>
     <string name="floating_mini_player">Плавающий мини-плеер</string>
     <string name="floating_mini_player_explain">Показывать мини-плеер в виде плавающей панели с закруглёнными углами</string>
+    <string name="floating_mini_player_height">Высота плавающего мини-плеера</string>
 
     <!-- Tabs settings -->
     <string name="tabs">Вкладки</string>

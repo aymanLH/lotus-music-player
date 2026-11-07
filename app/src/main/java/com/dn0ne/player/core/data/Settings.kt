@@ -23,6 +23,7 @@ class Settings(context: Context) {
     private val appearanceKey = "appearance"
     private val useDynamicColorKey = "use-dynamic-color"
     private val useAlbumArtColorKey = "use-album-art-color"
+    private val albumArtColorIntensityKey = "album-art-color-intensity"
     private val paletteStyleKey = "palette-style"
     private val amoledDarkThemeKey = "amoled-dark-theme"
 
@@ -54,6 +55,7 @@ class Settings(context: Context) {
 
     private val jumpToBeginningKey = "jump-to-beginning"
     private val floatingMiniPlayerKey = "floating-mini-player"
+    private val floatingMiniPlayerHeightKey = "floating-mini-player-height"
 
     private val gridPlaylistsKey = "grid-playlists"
 
@@ -116,8 +118,22 @@ class Settings(context: Context) {
         }
     }
 
+    private val _albumArtColorIntensity = MutableStateFlow(
+        sharedPreferences.getFloat(albumArtColorIntensityKey, 0.7f)
+    )
+    val albumArtColorIntensity = _albumArtColorIntensity.asStateFlow()
+    fun updateAlbumArtColorIntensity(value: Float) {
+        _albumArtColorIntensity.update { value }
+        with(sharedPreferences.edit()) {
+            putFloat(albumArtColorIntensityKey, value)
+            apply()
+        }
+    }
+
     private val _paletteStyle = MutableStateFlow(
-        Theme.PaletteStyle.entries[sharedPreferences.getInt(paletteStyleKey, 0)]
+        Theme.PaletteStyle.entries.getOrElse(
+            sharedPreferences.getInt(paletteStyleKey, Theme.PaletteStyle.AlbumCover.ordinal)
+        ) { Theme.PaletteStyle.AlbumCover }
     )
     val paletteStyle = _paletteStyle.asStateFlow()
     fun updatePaletteStyle(paletteStyle: Theme.PaletteStyle) {
@@ -385,6 +401,18 @@ class Settings(context: Context) {
         _floatingMiniPlayer.update { value }
         with(sharedPreferences.edit()) {
             putBoolean(floatingMiniPlayerKey, value)
+            apply()
+        }
+    }
+
+    private val _floatingMiniPlayerHeight = MutableStateFlow(
+        sharedPreferences.getInt(floatingMiniPlayerHeightKey, 88)
+    )
+    val floatingMiniPlayerHeight = _floatingMiniPlayerHeight.asStateFlow()
+    fun updateFloatingMiniPlayerHeight(value: Int) {
+        _floatingMiniPlayerHeight.update { value }
+        with(sharedPreferences.edit()) {
+            putInt(floatingMiniPlayerHeightKey, value)
             apply()
         }
     }

@@ -3,7 +3,9 @@ package com.dn0ne.player.app.presentation.components.playback
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
 import androidx.compose.animation.core.StartOffsetType
@@ -20,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,11 +37,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -66,6 +75,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -73,13 +83,13 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.lerp
 import androidx.compose.ui.util.fastFirstOrNull
 import com.dn0ne.player.R
-import com.dn0ne.player.app.presentation.components.topbar.LazyColumnWithCollapsibleTopBar
 import com.dn0ne.player.app.presentation.components.ProviderText
+import com.dn0ne.player.app.presentation.components.CoverArt
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -94,6 +104,8 @@ fun LyricsSheet(
     containerColor: Color,
     contentColor: Color,
     onBackClick: () -> Unit,
+    onPlayClick: () -> Unit,
+    onPauseClick: () -> Unit,
     onSeekTo: (Long) -> Unit,
     onPasteLyricsClick: () -> Unit,
     onPickLyricsClick: () -> Unit,
@@ -113,9 +125,6 @@ fun LyricsSheet(
         derivedStateOf {
             playbackState.lyrics
         }
-    }
-    var collapseFraction by remember {
-        mutableFloatStateOf(0f)
     }
     val context = LocalContext.current
 
@@ -154,74 +163,82 @@ fun LyricsSheet(
             }
         }
 
-        LazyColumnWithCollapsibleTopBar(
-            topBarContent = {
-                CompositionLocalProvider(
-                    LocalContentColor provides contentColor
-                ) {
-                    IconButton(
-                        onClick = onBackClick,
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.ArrowBackIosNew,
-                            contentDescription = context.resources.getString(R.string.close_lyrics_sheet)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = {
-                            showLyricsEditSheet = true
-                        },
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .padding(horizontal = 12.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Edit,
-                            contentDescription = context.resources.getString(R.string.edit_lyrics)
-                        )
-                    }
-
-                    Text(
-                        text = context.resources.getString(R.string.lyrics),
-                        fontSize = lerp(
-                            MaterialTheme.typography.titleLarge.fontSize,
-                            MaterialTheme.typography.displaySmall.fontSize,
-                            collapseFraction
-                        ),
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-
-                    if (lyrics?.synced != null && lyrics?.plain != null && showSyncedLyrics != null) {
-                        LyricsTypeSwitch(
-                            isSynced = showSyncedLyrics!!,
-                            onIsSyncedSwitch = {
-                                showSyncedLyrics = it
-                            },
-                            enabled = collapseFraction == 1f,
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 6.dp)
-                                .alpha(2 * (collapseFraction - 0.5f))
-                        )
-                    }
-                }
-            },
-            collapseFraction = {
-                collapseFraction = it
-            },
-            listState = listState,
-            contentPadding = PaddingValues(horizontal = 24.dp),
-            enableScrollbar = false,
+        Column(
             modifier = modifier
+                .fillMaxSize()
                 .background(color = containerColor)
-                .clickable(enabled = false, onClick = {})
                 .safeDrawingPadding()
         ) {
+            playbackState.currentTrack?.let { track ->
+                BoxWithConstraints(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
+                ) {
+                    val cardMaxWidth = maxWidth * 0.92f
+                    val coverRotation = remember(track.uri) { Animatable(0f) }
+                    LaunchedEffect(track.uri, playbackState.playWhenReady) {
+                        if (playbackState.playWhenReady) {
+                            while (true) {
+                                coverRotation.animateTo(
+                                    targetValue = coverRotation.value + 360f,
+                                    animationSpec = tween(
+                                        durationMillis = 8_000,
+                                        easing = LinearEasing
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .widthIn(max = cardMaxWidth)
+                            .clip(RoundedCornerShape(32.dp))
+                            .background(
+                                Color.Black.copy(alpha = 0.32f).compositeOver(containerColor)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        CoverArt(
+                            uri = track.coverArtUri,
+                            modifier = Modifier
+                                .size(56.dp)
+                                .clip(CircleShape)
+                                .graphicsLayer { rotationZ = coverRotation.value }
+                        )
+                        Column(
+                            modifier = Modifier
+                                .widthIn(max = (cardMaxWidth - 96.dp).coerceAtLeast(0.dp))
+                                .padding(start = 14.dp)
+                        ) {
+                            Text(
+                                text = track.title ?: context.resources.getString(R.string.unknown_title),
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = contentColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = track.artist ?: context.resources.getString(R.string.unknown_artist),
+                                style = MaterialTheme.typography.titleMedium,
+                                color = contentColor.copy(alpha = 0.78f),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
             when (showSyncedLyrics) {
                 null -> {
                     item(key = isLoadingLyrics) {
@@ -360,6 +377,78 @@ fun LyricsSheet(
                             }
                         }
                     }
+                }
+            }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(44.dp)
+                ) {
+                    IconButton(
+                        onClick = if (playbackState.playWhenReady) onPauseClick else onPlayClick,
+                        modifier = Modifier.size(44.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (playbackState.playWhenReady) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(36.dp)
+                        )
+                    }
+                }
+                WavingSeekBar(
+                    position = playbackState.position,
+                    duration = playbackState.currentTrack?.duration?.toLong() ?: 0L,
+                    isPlaying = playbackState.isPlaying,
+                    onPositionChange = onSeekTo,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.ArrowBackIosNew,
+                        contentDescription = context.resources.getString(R.string.close_lyrics_sheet)
+                    )
+                }
+
+                if (lyrics?.synced != null && lyrics?.plain != null && showSyncedLyrics != null) {
+                    LyricsTypeSwitch(
+                        isSynced = showSyncedLyrics!!,
+                        onIsSyncedSwitch = { showSyncedLyrics = it },
+                        modifier = Modifier.weight(1f).padding(horizontal = 8.dp)
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+
+                IconButton(
+                    onClick = { showLyricsEditSheet = true },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Edit,
+                        contentDescription = context.resources.getString(R.string.edit_lyrics)
+                    )
                 }
             }
         }

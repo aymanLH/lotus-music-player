@@ -76,12 +76,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
@@ -130,6 +132,7 @@ fun PlayerSheet(
 ) {
     val playbackState by playbackStateFlow.collectAsState()
     val floatingMiniPlayer by settings.floatingMiniPlayer.collectAsState()
+    val floatingMiniPlayerHeight by settings.floatingMiniPlayerHeight.collectAsState()
     val isExpanded by remember {
         derivedStateOf {
             playbackState.isPlayerExpanded
@@ -230,7 +233,14 @@ fun PlayerSheet(
                     }
                 }
             )
-            .background(color = MaterialTheme.colorScheme.surfaceContainer)
+            .background(
+                color = if (isExpanded) {
+                    MaterialTheme.colorScheme.surfaceContainer
+                } else {
+                    Color.White.copy(alpha = 0.14f)
+                        .compositeOver(MaterialTheme.colorScheme.background)
+                }
+            )
 
     ) { state ->
         when (state) {
@@ -238,6 +248,7 @@ fun PlayerSheet(
                 BottomPlayer(
                     playbackStateFlow = playbackStateFlow,
                     isFloating = floatingMiniPlayer,
+                    floatingMiniPlayerHeight = floatingMiniPlayerHeight.dp,
                     onClick = {
                         onPlayerExpandedChange(true)
                         translationY.updateBounds(
@@ -333,6 +344,7 @@ fun PlayerSheet(
 fun BottomPlayer(
     playbackStateFlow: StateFlow<PlaybackState>,
     isFloating: Boolean,
+    floatingMiniPlayerHeight: Dp,
     onClick: () -> Unit,
     onPlayClick: () -> Unit,
     onPauseClick: () -> Unit,
@@ -340,6 +352,14 @@ fun BottomPlayer(
     onCoverArtLoaded: (ImageBitmap?) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Let the artwork follow the floating bar height so a taller bar does not
+    // leave a small cover floating in empty space.
+    val coverArtSize = if (isFloating) {
+        (floatingMiniPlayerHeight - 24.dp).coerceIn(40.dp, 88.dp)
+    } else {
+        48.dp
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -375,18 +395,25 @@ fun BottomPlayer(
                         label = "bottom-player-progress"
                     ).value
                 )
-                .background(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                .background(
+                    color = Color.White.copy(alpha = 0.20f)
+                        .compositeOver(MaterialTheme.colorScheme.background)
+                )
         )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .then(
-                    if (isFloating) Modifier else Modifier.navigationBarsPadding()
+                    if (isFloating) {
+                        Modifier.height(floatingMiniPlayerHeight)
+                    } else {
+                        Modifier.navigationBarsPadding()
+                    }
                 )
                 .padding(
                     horizontal = 28.dp,
-                    vertical = if (isFloating) 12.dp else 28.dp
+                    vertical = if (isFloating) 0.dp else 28.dp
                 ),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -411,7 +438,7 @@ fun BottomPlayer(
                         uri = currentTrack.coverArtUri,
                         onCoverArtLoaded = onCoverArtLoaded,
                         modifier = Modifier
-                            .size(48.dp)
+                            .size(coverArtSize)
                             .clip(ShapeDefaults.Small)
                     )
 
@@ -911,6 +938,8 @@ fun ExpandedPlayer(
                 onBackClick = {
                     onLyricsSheetExpandedChange(false)
                 },
+                onPlayClick = onPlayClick,
+                onPauseClick = onPauseClick,
                 containerColor = lyricsContainerColor,
                 contentColor = lyricsContentColor,
                 onSeekTo = onSeekTo,

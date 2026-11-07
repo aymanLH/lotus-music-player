@@ -20,7 +20,10 @@ import androidx.compose.ui.unit.dp
 import com.dn0ne.player.R
 
 @Composable
-fun NothingYet(modifier: Modifier = Modifier) {
+fun NothingYet(
+    modifier: Modifier = Modifier,
+    iconSize: androidx.compose.ui.unit.Dp = 100.dp
+) {
     AnimatedVisibility(
         visibleState = MutableTransitionState(false).apply {
             targetState = true
@@ -43,7 +46,7 @@ fun NothingYet(modifier: Modifier = Modifier) {
             Image(
                 painter = painterResource(R.drawable.ic_launcher_foreground),
                 contentDescription = null,
-                modifier = Modifier.size(80.dp)
+                modifier = Modifier.size(iconSize)
             )
 
             Text(

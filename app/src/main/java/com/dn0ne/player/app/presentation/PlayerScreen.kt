@@ -73,7 +73,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -115,7 +117,9 @@ import com.kmpalette.color
 import com.kmpalette.rememberDominantColorState
 import com.materialkolor.DynamicMaterialTheme
 import com.materialkolor.PaletteStyle
+import com.materialkolor.ktx.toColor
 import com.materialkolor.ktx.toHct
+import com.materialkolor.rememberDynamicColorScheme
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -129,15 +133,13 @@ fun PlayerScreen(
     onPlaylistPick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val useDynamicColor by viewModel.settings.useDynamicColor.collectAsState()
-    val useAlbumArtColor by viewModel.settings.useAlbumArtColor.collectAsState()
     val dominantColorState = rememberDominantColorState()
     var coverArtBitmap by remember {
         mutableStateOf<ImageBitmap?>(null)
     }
-    val colorToApply by remember(coverArtBitmap, useAlbumArtColor, useDynamicColor) {
+    val colorToApply by remember(coverArtBitmap) {
         derivedStateOf {
-            if (useAlbumArtColor && coverArtBitmap != null) {
+            if (coverArtBitmap != null) {
                 dominantColorState.result
                     ?.paletteOrNull
                     ?.swatches
@@ -156,40 +158,83 @@ fun PlayerScreen(
         }
     }
 
-    LaunchedEffect(useAlbumArtColor, useDynamicColor) {
-        if (useAlbumArtColor) {
-            coverArtBitmap?.let {
-                dominantColorState.updateFrom(it)
-            }
-        } else dominantColorState.reset()
+    LaunchedEffect(coverArtBitmap) {
+        coverArtBitmap?.let { dominantColorState.updateFrom(it) } ?: dominantColorState.reset()
     }
 
     val appearance by viewModel.settings.appearance.collectAsState()
     val amoledDarkTheme by viewModel.settings.amoledDarkTheme.collectAsState()
     val paletteStyle by viewModel.settings.paletteStyle.collectAsState()
-    DynamicMaterialTheme(
+    val colorIntensity by viewModel.settings.albumArtColorIntensity.collectAsState()
+
+    val isDarkTheme = when (appearance) {
+        Theme.Appearance.System -> isSystemInDarkTheme()
+        Theme.Appearance.Light -> false
+        Theme.Appearance.Dark -> true
+    }
+    val materialPaletteStyle = when (paletteStyle) {
+        Theme.PaletteStyle.TonalSpot -> PaletteStyle.TonalSpot
+        Theme.PaletteStyle.Neutral -> PaletteStyle.Neutral
+        Theme.PaletteStyle.Vibrant -> PaletteStyle.Vibrant
+        Theme.PaletteStyle.Expressive -> PaletteStyle.Expressive
+        Theme.PaletteStyle.Rainbow -> PaletteStyle.Rainbow
+        Theme.PaletteStyle.FruitSalad -> PaletteStyle.FruitSalad
+        Theme.PaletteStyle.Monochrome -> PaletteStyle.Monochrome
+        Theme.PaletteStyle.Fidelity -> PaletteStyle.Fidelity
+        Theme.PaletteStyle.Content -> PaletteStyle.Content
+        Theme.PaletteStyle.AlbumCover -> PaletteStyle.Fidelity
+    }
+
+    // The palette styles cap chroma (TonalSpot tops out around 36), which makes
+    // the cover color feel washed out. Generate the exact scheme the style would
+    // produce, then push its key colors towards the requested chroma so 0% keeps
+    // the old look and 100% is a strong, cover-driven palette.
+    val generatedScheme = rememberDynamicColorScheme(
         seedColor = colorToApply,
-        primary = colorToApply.takeIf { it.toHct().chroma <= 20 },
-        useDarkTheme = when (appearance) {
-            Theme.Appearance.System -> isSystemInDarkTheme()
-            Theme.Appearance.Light -> false
-            Theme.Appearance.Dark -> true
-        },
+        isDark = isDarkTheme,
+        isAmoled = amoledDarkTheme,
+        style = materialPaletteStyle
+    )
+    DynamicMaterialTheme(
+        seedColor = if (colorIntensity > 0f) {
+            colorToApply.boostChroma(colorIntensity, 100.0)
+        } else colorToApply,
+        primary = if (colorIntensity > 0f) {
+            generatedScheme.primary.boostChroma(colorIntensity, 100.0)
+        } else colorToApply.takeIf { it.toHct().chroma <= 20 },
+        secondary = if (colorIntensity > 0f) {
+            generatedScheme.secondary.boostChroma(colorIntensity, 50.0)
+        } else null,
+        tertiary = if (colorIntensity > 0f) {
+            generatedScheme.tertiary.boostChroma(colorIntensity, 60.0)
+        } else null,
+        useDarkTheme = isDarkTheme,
         withAmoled = amoledDarkTheme,
-        style = when (paletteStyle) {
-            Theme.PaletteStyle.TonalSpot -> PaletteStyle.TonalSpot
-            Theme.PaletteStyle.Neutral -> PaletteStyle.Neutral
-            Theme.PaletteStyle.Vibrant -> PaletteStyle.Vibrant
-            Theme.PaletteStyle.Expressive -> PaletteStyle.Expressive
-            Theme.PaletteStyle.Rainbow -> PaletteStyle.Rainbow
-            Theme.PaletteStyle.FruitSalad -> PaletteStyle.FruitSalad
-            Theme.PaletteStyle.Monochrome -> PaletteStyle.Monochrome
-            Theme.PaletteStyle.Fidelity -> PaletteStyle.Fidelity
-            Theme.PaletteStyle.Content -> PaletteStyle.Content
-        },
+        style = materialPaletteStyle,
         animationSpec = tween(300, 200),
         animate = true
     ) {
+        val baseScheme = MaterialTheme.colorScheme
+        val displayedScheme = remember(baseScheme, paletteStyle, colorToApply, colorIntensity) {
+            if (paletteStyle == Theme.PaletteStyle.AlbumCover) {
+                val coverTint = colorToApply.boostChroma(colorIntensity, 100.0)
+                val backgroundTint = 0.10f + colorIntensity * 0.24f
+                val containerTint = 0.08f + colorIntensity * 0.18f
+                baseScheme.copy(
+                    background = lerp(baseScheme.background, coverTint, backgroundTint),
+                    surface = lerp(baseScheme.surface, coverTint, containerTint),
+                    surfaceVariant = lerp(baseScheme.surfaceVariant, coverTint, containerTint),
+                    surfaceDim = lerp(baseScheme.surfaceDim, coverTint, containerTint),
+                    surfaceBright = lerp(baseScheme.surfaceBright, coverTint, containerTint),
+                    surfaceContainerLowest = lerp(baseScheme.surfaceContainerLowest, coverTint, containerTint),
+                    surfaceContainerLow = lerp(baseScheme.surfaceContainerLow, coverTint, containerTint),
+                    surfaceContainer = lerp(baseScheme.surfaceContainer, coverTint, containerTint),
+                    surfaceContainerHigh = lerp(baseScheme.surfaceContainerHigh, coverTint, containerTint),
+                    surfaceContainerHighest = lerp(baseScheme.surfaceContainerHighest, coverTint, containerTint)
+                )
+            } else baseScheme
+        }
+        MaterialTheme(colorScheme = displayedScheme, typography = MaterialTheme.typography) {
         val rippleColor = MaterialTheme.colorScheme.primaryContainer
         val ripple = remember(rippleColor) {
             ripple(color = rippleColor)
@@ -784,14 +829,6 @@ fun PlayerScreen(
                     ) {
                         currentTrack?.let {
 
-                            if (useAlbumArtColor) {
-                                LaunchedEffect(coverArtBitmap) {
-                                    coverArtBitmap?.let {
-                                        dominantColorState.updateFrom(it)
-                                    }
-                                }
-                            }
-
                             PlayerSheet(
                                 playbackStateFlow = viewModel.playbackState,
                                 onPlayerExpandedChange = {
@@ -990,6 +1027,7 @@ fun PlayerScreen(
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
         }
     }
 }
@@ -1821,4 +1859,14 @@ private sealed interface PlayerRoutes {
 
     @Serializable
     data object MutablePlaylist : PlayerRoutes
+}
+
+/**
+ * Moves [this] color's chroma towards [targetChroma] by [intensity] (0..1).
+ * Used to make cover-art driven palettes more saturated without jumping at 0%.
+ */
+private fun Color.boostChroma(intensity: Float, targetChroma: Double): Color {
+    val hct = toHct()
+    val boostedChroma = hct.chroma + (targetChroma - hct.chroma).coerceAtLeast(0.0) * intensity
+    return hct.withChroma(boostedChroma).toColor()
 }

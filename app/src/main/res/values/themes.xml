@@ -5,7 +5,7 @@
 
     <style name="Theme.MusicPlayer.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">#32164D</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/lyrion_no_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/lyrion</item>
         <item name="windowSplashScreenAnimationDuration">300</item>
         <item name="postSplashScreenTheme">@style/Theme.MusicPlayer</item>
     </style>

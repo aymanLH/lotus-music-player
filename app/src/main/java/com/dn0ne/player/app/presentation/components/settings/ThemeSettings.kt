@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Album
 import androidx.compose.material.icons.rounded.ArrowBackIosNew
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Contrast
@@ -58,6 +57,7 @@ import com.dn0ne.player.app.presentation.components.topbar.ColumnWithCollapsible
 import com.dn0ne.player.core.data.Settings
 import com.kmpalette.DominantColorState
 import com.materialkolor.DynamicMaterialTheme
+import kotlin.math.roundToInt
 
 @Composable
 fun ThemeSettings(
@@ -202,6 +202,13 @@ fun ThemeSettings(
         val paletteOptions = remember {
             listOf(
                 PaletteOption(
+                    title = context.resources.getString(R.string.palette_album_cover),
+                    onSelection = {
+                        settings.updatePaletteStyle(PaletteStyle.AlbumCover)
+                    },
+                    style = PaletteStyle.AlbumCover
+                ),
+                PaletteOption(
                     title = context.resources.getString(R.string.palette_tonal_spot),
                     onSelection = {
                         settings.updatePaletteStyle(PaletteStyle.TonalSpot)
@@ -263,7 +270,7 @@ fun ThemeSettings(
                         settings.updatePaletteStyle(PaletteStyle.Content)
                     },
                     style = PaletteStyle.Content
-                )
+                ),
             )
         }
 
@@ -317,6 +324,7 @@ fun ThemeSettings(
                             PaletteStyle.Monochrome -> com.materialkolor.PaletteStyle.Monochrome
                             PaletteStyle.Fidelity -> com.materialkolor.PaletteStyle.Fidelity
                             PaletteStyle.Content -> com.materialkolor.PaletteStyle.Content
+                            PaletteStyle.AlbumCover -> com.materialkolor.PaletteStyle.Fidelity
                         },
                         animate = true
                     ) {
@@ -381,15 +389,17 @@ fun ThemeSettings(
             )
         }
 
-        val useAlbumArtColor by settings.useAlbumArtColor.collectAsState()
-        SettingSwitch(
-            title = context.resources.getString(R.string.use_album_art_color),
-            supportingText = context.resources.getString(R.string.use_album_art_color_explain),
-            icon = Icons.Rounded.Album,
-            isChecked = useAlbumArtColor,
-            onCheckedChange = {
-                settings.updateUseAlbumArtColor(it)
+        val albumArtColorIntensity by settings.albumArtColorIntensity.collectAsState()
+        SettingSlider(
+            title = context.resources.getString(R.string.color_intensity),
+            value = albumArtColorIntensity * 100f,
+            valueToShow = "${(albumArtColorIntensity * 100).roundToInt()}%",
+            onValueChange = {
+                settings.updateAlbumArtColorIntensity(it / 100f)
             },
+            onValueChangeFinished = {},
+            steps = 9,
+            valueRange = 0f..100f,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp)
@@ -428,6 +438,7 @@ object Theme {
         FruitSalad,
         Monochrome,
         Fidelity,
-        Content
+        Content,
+        AlbumCover
     }
 }

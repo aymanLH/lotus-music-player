@@ -289,6 +289,7 @@ class PlayerViewModel(
                         playlist = playlist,
                         currentTrack = track,
                         isPlaying = player!!.isPlaying,
+                        playWhenReady = player!!.playWhenReady,
                         position = player!!.currentPosition
                     )
                 }
@@ -308,6 +309,12 @@ class PlayerViewModel(
 
             player?.addListener(
                 object : Player.Listener {
+                    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                        _playbackState.update {
+                            it.copy(playWhenReady = playWhenReady)
+                        }
+                    }
+
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
                         _playbackState.update {
                             it.copy(

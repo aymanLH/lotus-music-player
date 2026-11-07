@@ -407,7 +407,7 @@ fun MutablePlaylist(
         if (!isInSelectionMode) {
             if (trackList.isEmpty()) {
                 item {
-                    NothingYet()
+                    NothingYet(iconSize = 125.dp)
                 }
             }
 

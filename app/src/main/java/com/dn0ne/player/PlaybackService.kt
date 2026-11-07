@@ -87,6 +87,7 @@ private class EqualizerSettings(context: Context) {
 class EqualizerController(context: Context) {
     private val _settings = EqualizerSettings(context)
     private var _audioSessionId: Int? = null
+    private var _failedAudioSessionId: Int? = null
     var equalizer: Equalizer? = null
         private set
 
@@ -101,7 +102,7 @@ class EqualizerController(context: Context) {
         _settings.isEnabled = value
 
         _audioSessionId?.let {
-            updateEqualizer(it)
+            updateEqualizer(it, force = true)
         }
     }
 
@@ -121,32 +122,65 @@ class EqualizerController(context: Context) {
         _settings.bandLevels = levels
 
         _audioSessionId?.let {
-            updateEqualizer(it)
+            updateEqualizer(it, force = true)
         }
     }
 
-    fun updateEqualizer(audioSessionId: Int) {
-        equalizer?.release()
+    fun updateEqualizer(audioSessionId: Int, force: Boolean = false) {
+        if (!_settings.isEnabled) {
+            releaseEqualizerSafely()
+            _audioSessionId = audioSessionId
+            _failedAudioSessionId = null
+            return
+        }
 
+        if (!force && _audioSessionId == audioSessionId &&
+            (equalizer != null || _failedAudioSessionId == audioSessionId)
+        ) {
+            return
+        }
+
+        releaseEqualizerSafely()
         _audioSessionId = audioSessionId
+        _failedAudioSessionId = audioSessionId
 
-        if (!_settings.isEnabled) return
+        var candidate: Equalizer? = null
+        try {
+            val newEqualizer = Equalizer(Int.MAX_VALUE, audioSessionId)
+            candidate = newEqualizer
+            newEqualizer.enabled = true
 
-        equalizer = Equalizer(Int.MAX_VALUE, audioSessionId).apply {
-            enabled = true
-
-            (0 until numberOfBands).forEach {
-                println("BAND FREQ RANGE: ${getBandFreqRange(it.toShort()).joinToString("..")}")
+            val availableBands = newEqualizer.numberOfBands.toInt()
+            _settings.bandLevels
+                ?.take(availableBands)
+                ?.forEachIndexed { band, level ->
+                    newEqualizer.setBandLevel(band.toShort(), level)
+                }
+            equalizer = newEqualizer
+            _failedAudioSessionId = null
+        } catch (exception: RuntimeException) {
+            try {
+                candidate?.release()
+            } catch (releaseException: RuntimeException) {
+                Log.w("EQUALIZER", "Failed to release an unavailable audio effect", releaseException)
             }
-            _settings.bandLevels?.forEachIndexed { band, level ->
-                setBandLevel(band.toShort(), level)
-            }
+            equalizer = null
+            Log.w("EQUALIZER", "Equalizer unavailable for audio session $audioSessionId", exception)
         }
     }
 
     fun releaseEqualizer() {
-        equalizer?.release()
+        releaseEqualizerSafely()
+    }
+
+    private fun releaseEqualizerSafely() {
+        val currentEqualizer = equalizer
         equalizer = null
+        try {
+            currentEqualizer?.release()
+        } catch (exception: RuntimeException) {
+            Log.w("EQUALIZER", "Failed to release audio effect", exception)
+        }
     }
 
     fun resetBandLevels() {
@@ -159,7 +193,7 @@ class EqualizerController(context: Context) {
         }
 
         _audioSessionId?.let {
-            updateEqualizer(it)
+            updateEqualizer(it, force = true)
         }
     }
 

@@ -265,6 +265,7 @@
     <string name="palette_monochrome">Monochrome</string>
     <string name="palette_fidelity">Fidelity</string>
     <string name="palette_content">Content</string>
+    <string name="palette_album_cover">Album Cover</string>
 
     <string name="black_theme">Black theme</string>
     <string name="black_theme_explain">Make dark theme truly dark</string>
@@ -272,6 +273,7 @@
     <string name="use_system_key_colors_explain">Use system accent colors</string>
     <string name="use_album_art_color">Album art color</string>
     <string name="use_album_art_color_explain">Use dominant color of current track\'s cover art</string>
+    <string name="color_intensity">Cover color intensity</string>
 
     <!-- Playback settings -->
     <string name="audio_focus">Audio focus</string>
@@ -283,6 +285,7 @@
     <string name="jump_to_beginning_explain">Restart current track on first press of previous button</string>
     <string name="floating_mini_player">Floating mini player</string>
     <string name="floating_mini_player_explain">Show the mini player as a rounded floating bar above the bottom edge</string>
+    <string name="floating_mini_player_height">Floating mini player height</string>
 
     <!-- Tabs settings -->
     <string name="tabs">Tabs</string>

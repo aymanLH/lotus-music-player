@@ -233,7 +233,7 @@ fun AddToOrCreatePlaylistBottomSheet(
                                 }
                             }
                         } else {
-                            NothingYet()
+                            NothingYet(iconSize = 125.dp)
                         }
                     }
                 }
