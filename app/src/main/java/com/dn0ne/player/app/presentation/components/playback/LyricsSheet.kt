@@ -126,6 +126,13 @@ fun LyricsSheet(
             playbackState.lyrics
         }
     }
+    val syncedLyrics = remember(lyrics?.synced) {
+        lyrics?.synced?.let { synced ->
+            if (synced.firstOrNull()?.first?.let { it > 5000 } == true) {
+                listOf(0 to "") + synced
+            } else synced
+        }
+    }
     val context = LocalContext.current
 
     var showSyncedLyrics by remember(lyrics) {
@@ -267,15 +274,7 @@ fun LyricsSheet(
                 }
 
                 true -> {
-                    lyrics?.synced?.let { synced ->
-                        val synced = synced.firstOrNull()?.first?.let { firstTime ->
-                            if (firstTime > 5000) {
-                                synced.toMutableList().apply {
-                                    add(0, 0 to "")
-                                }
-                            } else synced
-                        } ?: synced
-
+                    syncedLyrics?.let { synced ->
                         itemsIndexed(
                             items = synced,
                             key = { index, (time, _) -> "$index-$time" }
@@ -409,7 +408,19 @@ fun LyricsSheet(
                     position = playbackState.position,
                     duration = playbackState.currentTrack?.duration?.toLong() ?: 0L,
                     isPlaying = playbackState.isPlaying,
-                    onPositionChange = onSeekTo,
+                    onPositionChange = { position ->
+                        onSeekTo(position)
+                        if (showSyncedLyrics == true && !syncedLyrics.isNullOrEmpty()) {
+                            val index = syncedLyrics.indexOfLast { it.first.toLong() <= position }
+                                .coerceAtLeast(0)
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(
+                                    index = index,
+                                    scrollOffset = -listState.layoutInfo.viewportSize.height / 3
+                                )
+                            }
+                        }
+                    },
                     modifier = Modifier.weight(1f)
                 )
             }

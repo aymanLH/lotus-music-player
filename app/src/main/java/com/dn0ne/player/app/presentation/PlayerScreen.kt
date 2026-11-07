@@ -166,6 +166,7 @@ fun PlayerScreen(
     val amoledDarkTheme by viewModel.settings.amoledDarkTheme.collectAsState()
     val paletteStyle by viewModel.settings.paletteStyle.collectAsState()
     val colorIntensity by viewModel.settings.albumArtColorIntensity.collectAsState()
+    val coverSeedChroma = colorToApply.toHct().chroma
 
     val isDarkTheme = when (appearance) {
         Theme.Appearance.System -> isSystemInDarkTheme()
@@ -197,16 +198,16 @@ fun PlayerScreen(
     )
     DynamicMaterialTheme(
         seedColor = if (colorIntensity > 0f) {
-            colorToApply.boostChroma(colorIntensity, 100.0)
+            colorToApply.boostChroma(colorIntensity, 100.0, coverSeedChroma)
         } else colorToApply,
         primary = if (colorIntensity > 0f) {
-            generatedScheme.primary.boostChroma(colorIntensity, 100.0)
+            generatedScheme.primary.boostChroma(colorIntensity, 100.0, coverSeedChroma)
         } else colorToApply.takeIf { it.toHct().chroma <= 20 },
         secondary = if (colorIntensity > 0f) {
-            generatedScheme.secondary.boostChroma(colorIntensity, 50.0)
+            generatedScheme.secondary.boostChroma(colorIntensity, 50.0, coverSeedChroma)
         } else null,
         tertiary = if (colorIntensity > 0f) {
-            generatedScheme.tertiary.boostChroma(colorIntensity, 60.0)
+            generatedScheme.tertiary.boostChroma(colorIntensity, 60.0, coverSeedChroma)
         } else null,
         useDarkTheme = isDarkTheme,
         withAmoled = amoledDarkTheme,
@@ -217,7 +218,7 @@ fun PlayerScreen(
         val baseScheme = MaterialTheme.colorScheme
         val displayedScheme = remember(baseScheme, paletteStyle, colorToApply, colorIntensity) {
             if (paletteStyle == Theme.PaletteStyle.AlbumCover) {
-                val coverTint = colorToApply.boostChroma(colorIntensity, 100.0)
+                val coverTint = colorToApply.boostChroma(colorIntensity, 100.0, coverSeedChroma)
                 val backgroundTint = 0.10f + colorIntensity * 0.24f
                 val containerTint = 0.08f + colorIntensity * 0.18f
                 baseScheme.copy(
@@ -1865,8 +1866,13 @@ private sealed interface PlayerRoutes {
  * Moves [this] color's chroma towards [targetChroma] by [intensity] (0..1).
  * Used to make cover-art driven palettes more saturated without jumping at 0%.
  */
-private fun Color.boostChroma(intensity: Float, targetChroma: Double): Color {
+private fun Color.boostChroma(
+    intensity: Float,
+    targetChroma: Double,
+    seedChroma: Double = toHct().chroma
+): Color {
     val hct = toHct()
+    if (seedChroma < 10.0) return hct.toColor()
     val boostedChroma = hct.chroma + (targetChroma - hct.chroma).coerceAtLeast(0.0) * intensity
     return hct.withChroma(boostedChroma).toColor()
 }
